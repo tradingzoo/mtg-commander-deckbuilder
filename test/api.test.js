@@ -38,6 +38,35 @@ test('edhrec: bracket filter path', async () => {
   assert.equal(r.body.edhrec_url, 'https://edhrec.com/average-decks/krenko-mob-boss/core');
 });
 
+test('edhrec: popular themes come back sorted, junk dropped', async () => {
+  const r = await call(edhrec, { url: '/api/edhrec?slug=krenko-mob-boss&bracket=core' });
+  assert.deepEqual(r.body.themes.map(t => t.slug), ['tokens', 'goblins', 'treasure', 'go-wide', 'combo']);
+  assert.deepEqual(r.body.themes[0], { slug: 'tokens', name: 'Tokens', count: 410 });
+});
+
+test('edhrec: theme path is commander/bracket/theme/budget, average deck only', async () => {
+  const before = calls.length;
+  const r = await call(edhrec, { url: '/api/edhrec?slug=krenko-mob-boss&bracket=core&tag=tokens' });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.tag, 'tokens');
+  assert.equal(r.body.commander.num_decks, 410);
+  assert.ok(r.body.deck.includes('1 Heroic Intervention'));
+  assert.equal(r.body.edhrec_url, 'https://edhrec.com/average-decks/krenko-mob-boss/core/tokens');
+  const urls = calls.slice(before).map(c => c.url);
+  assert.deepEqual(urls, ['https://json.edhrec.com/pages/average-decks/krenko-mob-boss/core/tokens.json']);
+  // budget goes after the theme
+  await call(edhrec, { url: '/api/edhrec?slug=krenko-mob-boss&bracket=core&tag=tokens&budget=budget' });
+  assert.equal(calls.at(-1).url, 'https://json.edhrec.com/pages/average-decks/krenko-mob-boss/core/tokens/budget.json');
+});
+
+test('edhrec: unknown theme is a friendly 404, bad theme a 400', async () => {
+  const r = await call(edhrec, { url: '/api/edhrec?slug=krenko-mob-boss&bracket=core&tag=treasure' });
+  assert.equal(r.status, 404);
+  assert.match(r.body.error, /treasure theme/);
+  assert.equal((await call(edhrec, { url: '/api/edhrec?slug=krenko-mob-boss&tag=../x' })).status, 400);
+  assert.equal((await call(edhrec, { url: '/api/edhrec?slug=krenko-mob-boss&tag=core' })).status, 400);
+});
+
 test('edhrec: newer deck shape (commander_v2 + cards by type)', async () => {
   const r = await call(edhrec, { url: '/api/edhrec?slug=krenko-mob-boss&bracket=optimized' });
   assert.equal(r.status, 200);

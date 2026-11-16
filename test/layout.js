@@ -42,6 +42,9 @@ try {
       await p.fill('#mydeck', '1 Krenko, Mob Boss\n1 Rhystic Study\n1 Sol Ring\n35 Mountain');
       await p.click('#compare');
       await p.waitForFunction(() => /Compared/.test(document.querySelector('#compareStatus').textContent), null, { timeout: 5000 });
+      await p.waitForSelector('table.themes', { timeout: 5000 });
+      await p.click('#themeChips .chip[aria-pressed="false"]');
+      await p.click('details.theme summary');
       await p.click('#crossGo');
       await p.waitForSelector('table.cross', { timeout: 5000 });
       await p.click('#table tr.cat');

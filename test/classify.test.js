@@ -37,11 +37,18 @@ test('slugs', () => {
 test('EDHREC links: slug, bracket and budget', () => {
   const dain = 'https://edhrec.com/commanders/dain-of-the-ancient-halls/upgraded/decks';
   assert.equal(slugFromInput(dain), 'dain-of-the-ancient-halls');
-  assert.deepEqual(filtersFromInput(dain), { bracket: 'upgraded', budget: '' });
+  assert.deepEqual(filtersFromInput(dain), { bracket: 'upgraded', budget: '', tag: '' });
   assert.equal(slugify('Dáin of the Ancient Halls'), 'dain-of-the-ancient-halls');
-  assert.deepEqual(filtersFromInput('https://edhrec.com/average-decks/krenko-mob-boss/core/budget'), { bracket: 'core', budget: 'budget' });
-  assert.deepEqual(filtersFromInput('edhrec.com/commanders/krenko-mob-boss/expensive'), { bracket: '', budget: 'expensive' });
-  assert.deepEqual(filtersFromInput('Krenko, Mob Boss'), { bracket: '', budget: '' });
+  assert.deepEqual(filtersFromInput('https://edhrec.com/average-decks/krenko-mob-boss/core/budget'), { bracket: 'core', budget: 'budget', tag: '' });
+  assert.deepEqual(filtersFromInput('edhrec.com/commanders/krenko-mob-boss/expensive'), { bracket: '', budget: 'expensive', tag: '' });
+  assert.deepEqual(filtersFromInput('Krenko, Mob Boss'), { bracket: '', budget: '', tag: '' });
+});
+
+test('EDHREC theme links name the theme', () => {
+  assert.deepEqual(filtersFromInput('https://edhrec.com/commanders/dain-of-the-ancient-halls/upgraded/equipment'), { bracket: 'upgraded', budget: '', tag: 'equipment' });
+  assert.deepEqual(filtersFromInput('https://edhrec.com/average-decks/dain-of-the-ancient-halls/upgraded/extra-combats/budget'), { bracket: 'upgraded', budget: 'budget', tag: 'extra-combats' });
+  assert.deepEqual(filtersFromInput('https://edhrec.com/commanders/dain-of-the-ancient-halls/tokens'), { bracket: '', budget: '', tag: 'tokens' });
+  assert.equal(slugFromInput('https://edhrec.com/commanders/dain-of-the-ancient-halls/upgraded/equipment'), 'dain-of-the-ancient-halls');
 });
 
 test('decklist parsing', () => {
