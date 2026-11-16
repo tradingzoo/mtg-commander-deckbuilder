@@ -119,6 +119,20 @@ table.cross .sel { background: #f6ecd6; }
 table.cross .mine-col { color: var(--mine); font-weight: 600; }
 .shifts { margin: .4rem 0 0; padding-left: 20px; }
 
+/* Combos */
+.btnrow { display: flex; gap: .6rem; flex-wrap: wrap; }
+.btnrow .btn { flex: 1 1 10rem; }
+.combo { display: flex; flex-direction: column; gap: .45rem; }
+.combo h3 { font: 600 1rem/1.35 var(--f-body); }
+.combo h3 .miss { color: var(--mine); }
+.combo ul { margin: 0; padding-left: 18px; font-size: .9rem; }
+.combo .meta { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; font-size: .82rem; color: var(--muted); }
+.tag { font: 500 .68rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; padding: .3rem .5rem; border-radius: 999px; background: var(--surface); color: var(--ink); }
+.tag.good { background: #dcebdc; color: var(--good); } .tag.mid { background: #f3e6c8; color: var(--mine); } .tag.bad { background: #f5d9d5; color: var(--bad); }
+.combo .warn { color: var(--bad); font-size: .85rem; font-weight: 600; }
+.combo .pre { font-size: .85rem; color: var(--muted); }
+details.more summary { cursor: pointer; font-weight: 600; padding: .4rem 0; }
+
 /* Mana curve */
 .curve { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; align-items: end; height: 150px; }
 .bar { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; font-size: .75rem; color: var(--muted); }
