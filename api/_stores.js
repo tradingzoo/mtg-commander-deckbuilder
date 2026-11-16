@@ -95,11 +95,13 @@ export function parseYannick(html, cardName, base = 'https://yannickthegathering
     const title = stripTags(nameP);
     if (!titleMatches(title, cardName)) continue;
     const href = (nameP.match(/href="([^"]+)"/) || [])[1] || '';
-    const amount = between(art, 'product-card-price-amount">', '</p>');
+    const amount = (art.match(/product-card-price-amount"[^>]*>([\s\S]*?)<\/p>/) || [])[1] || '';
     const price = money(stripTags(amount).replace('฿', ''));
     const options = [...art.matchAll(/<option[^>]*>([^<]*)<\/option>/g)].map(m => decodeEntities(m[1]).trim()).filter(Boolean);
     const qtyText = (art.match(/title="[^"]*Total qty:\s*([0-9+]+)/) || [])[1] || null;
-    const inStock = /product-stock-label--in/.test(art) || /In stock/i.test(stripTags(art));
+    // Labels seen: --in "In stock", --low "Only 2 left". Anything saying sold out / out of stock counts as gone.
+    const label = (art.match(/product-stock-label[^"]*"[^>]*>([^<]*)</) || [])[1] || '';
+    const inStock = !/product-stock-label--(out|sold|none)/.test(art) && !/sold out|out of stock|หมด/i.test(label);
     const set = (title.match(/\(([A-Z0-9]{3,5})\)(?:\s+\w+)?\s*$/) || [])[1] || '';
     listings.push({
       name: title.replace(/\s*\([A-Z0-9]{3,5}\)(\s+\w+)?\s*$/, '').replace(/\s*\(\d+\)\s*$/, '') + (/\bJapanese\s*$/.test(title) ? ' (Japanese)' : ''),
