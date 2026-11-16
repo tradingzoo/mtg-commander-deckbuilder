@@ -48,6 +48,15 @@ try {
       const sp = await spill(p, w);
       if (sp.length) fails.push(`${tag} results spill: ${sp.join(', ')}`);
       if (w === 390 || w === 800) await p.screenshot({ path: `${out}layout-${tag}.png`, fullPage: true });
+      await p.goto(`http://localhost:${PORT}/find.html`);
+      if ((await spill(p, w)).length) fails.push(`${tag} finder spills: ${(await spill(p, w)).join(', ')}`);
+      await p.fill('#card', 'Gimli of the Glittering Caves');
+      await p.click('#go');
+      await p.waitForSelector('#results:not([hidden]) .store', { timeout: 5000 });
+      const fsp = await spill(p, w);
+      if (fsp.length) fails.push(`${tag} finder results spill: ${fsp.join(', ')}`);
+      await p.waitForTimeout(700); // let the fade-in finish
+      if (w === 390 || w === 800) await p.screenshot({ path: `${out}find-${tag}.png`, fullPage: true });
     } catch (e) {
       fails.push(`${tag}: ${e.message.split('\n')[0]}`);
     }

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Find a card · Commander Deckbuilder</title>
+  <meta name="description" content="Where to buy a Magic card in Bangkok: stock and baht prices from local stores, plus online prices.">
+  <meta name="theme-color" content="#0f1a16">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="/">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="3" width="17" height="24" rx="3" fill="#c08a2a"/><rect x="10" y="6" width="17" height="24" rx="3" fill="#f2f1ec" stroke="#0f1a16" stroke-width="1.5"/></svg>
+        Commander Deckbuilder
+      </a>
+      <a class="hdr-pill" href="/">Deck averages</a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow">Card finder · Bangkok</p>
+        <h1>Where to buy a card</h1>
+        <p class="lede">Checks stock and baht prices at 1st Pick, Yannick The Gathering and Sabai Cards, then shows online prices to compare.</p>
+      </div>
+      <form id="find" class="quick" autocomplete="off">
+        <label class="wide">Card
+          <input id="card" name="card" list="suggest" placeholder="Gimli of the Glittering Caves" required>
+        </label>
+        <datalist id="suggest"></datalist>
+        <button type="submit" id="go" class="btn">Find it</button>
+      </form>
+      <p id="status" class="status" role="status"></p>
+    </div>
+  </section>
+
+  <div id="results" hidden>
+    <section class="tight">
+      <div class="wrap">
+        <div id="cardHead" class="card cmdr"></div>
+      </div>
+    </section>
+
+    <section id="bangkok" class="band">
+      <div class="wrap stack">
+        <div class="head">
+          <p class="eyebrow">Bangkok stores</p>
+          <h2>Local stock</h2>
+          <p class="muted">In stock and cheapest first. Stock moves fast, so the store's page has the final word.</p>
+        </div>
+        <div id="stores" class="stack"></div>
+      </div>
+    </section>
+
+    <section id="online">
+      <div class="wrap stack">
+        <div class="head">
+          <p class="eyebrow">Online</p>
+          <h2>Prices to compare</h2>
+          <p class="muted">Cheapest printing, from Scryfall's daily prices. Shipping to Thailand is extra.</p>
+        </div>
+        <div id="onlineList" class="card"></div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <p>Stock and prices come from each store's public search page, checked at most once every 30 minutes per card.
+      Online prices from <a href="https://scryfall.com">Scryfall</a>. Baht conversion from <a href="https://www.exchangerate-api.com">ExchangeRate-API</a>.
+      Not affiliated with Wizards of the Coast or any store.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/find.js"></script>
+</body>
+</html>
