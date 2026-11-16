@@ -61,8 +61,20 @@ export const EDHREC = {
     deck: KRENKO_DECK.filter(l => !l.includes('Mountain')).concat(['29 Mountain']),
     container: { json_dict: { card: { name: 'Krenko, Mob Boss', color_identity: ['R'], num_decks: 2100 } } },
   },
+  // The newer EDHREC shape: commander_v2 plus cards grouped by type as [name, qty] pairs.
   'average-decks/krenko-mob-boss/optimized': {
-    deck: KRENKO_DECK.filter(l => !l.includes('Mountain')).concat(['1 Lightning Bolt', '26 Mountain']),
+    deck: {
+      commander: ['Krenko, Mob Boss'],
+      commander_v2: [['Krenko, Mob Boss', 1]],
+      cards: {
+        Artifact: [['Sol Ring', 1], ['Arcane Signet', 1], ['Skullclamp', 1]],
+        Creature: [['Dockside Extortionist', 1], ['Goblin Chieftain', 1]],
+        Instant: [['Lightning Bolt', 2], ['Chaos Warp', 1]],
+        Sorcery: [["Jeska's Will", 1], ['Blasphemous Act', 1]],
+        Enchantment: [['Fable of the Mirror-Breaker // Reflection of Kiki-Jiki', 1]],
+        Land: [['Command Tower', 1], ['Mountain', 26]],
+      },
+    },
     container: { json_dict: { card: { name: 'Krenko, Mob Boss', color_identity: ['R'], num_decks: 640 } } },
   },
   'average-decks/krenko-mob-boss/cedh': {
