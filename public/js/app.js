@@ -1,7 +1,7 @@
 import {
   TYPE_ORDER, ROLE_ORDER, parseDecklist, slugFromInput, filtersFromInput, summarize, frontFace, lookup,
 } from './classify.js';
-import { BRACKETS, RULES_CHECKED, bracketById, bracketSignals } from './brackets.js';
+import { BRACKETS, bracketById, bracketSignals } from './brackets.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -358,14 +358,6 @@ $('#table').addEventListener('click', (e) => {
   render();
 });
 
-$('#bracketGuide').innerHTML = BRACKETS.map(b => {
-  const l = b.limits;
-  const gc = l.gameChangers === Infinity ? 'Any' : l.gameChangers ? `Up to ${l.gameChangers}` : 'None';
-  const word = { none: 'None', few: 'A few, never chained', late: 'None early', any: 'Allowed' };
-  return `<li><strong>${b.number} · ${esc(b.name)}</strong> ${b.minTurns ? `(${b.minTurns}+ turns)` : '(any turn)'}<br>${esc(b.summary)}
-    <br><span class="muted">Game Changers: ${gc} · Extra turns: ${word[l.extraTurns]} · Mass land denial: ${word[l.massLandDenial]} · 2-card combos: ${word[l.twoCardCombos]}</span></li>`;
-}).join('');
-$('#rulesChecked').textContent = RULES_CHECKED;
 
 // ---------- start ----------
 
