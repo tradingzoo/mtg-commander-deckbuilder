@@ -104,7 +104,7 @@ $('#search').addEventListener('submit', async (e) => {
     render();
     setStatus(status, missing.length ? `Done. ${missing.length} card(s) not found on Scryfall: ${missing.slice(0, 5).join(', ')}` : '');
     $('#results').hidden = false;
-    $('#cmdr').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('#results').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (err) {
     setStatus(status, err.message, true);
   } finally {
@@ -227,7 +227,24 @@ function render() {
     : '';
 
   renderBracketNote();
+  renderFacts();
   renderCurve();
+}
+
+// Facts strip under the hero, and the sticky bar on phones.
+function renderFacts() {
+  const { commander: data, avg } = state;
+  const b = bracketById(data.bracket);
+  const facts = [
+    [data.commander.num_decks ? Number(data.commander.num_decks).toLocaleString() : '?', 'decks averaged'],
+    [fmt(avg.types.Land), 'lands'],
+    [fmt(avg.spells), 'non-land spells'],
+    [avg.avgCmc.toFixed(2), 'average mana value'],
+  ];
+  $('#facts').innerHTML = `<div class="wrap">${facts.map(([v, l]) => `<div><b>${esc(v)}</b><small>${esc(l)}</small></div>`).join('')}</div>`;
+  $('#mbarTitle').textContent = data.commander.name || data.slug;
+  $('#mbarSub').textContent = `${b ? `Bracket ${b.number} · ${b.name}` : 'All brackets'} · cards allow ${avg.signals.floor.bracket}+`;
+  $('#mbar').hidden = false;
 }
 
 function floorText(who, sig) {
@@ -263,7 +280,7 @@ function renderCurve() {
   $('#curve').innerHTML = bars;
   let legend = document.querySelector('.legend');
   if (!legend) { legend = document.createElement('p'); legend.className = 'legend'; $('#curve').after(legend); }
-  legend.innerHTML = `<i style="background:var(--accent)"></i>Average${mine ? '<i style="background:#d9a441"></i>Yours' : ''}`;
+  legend.innerHTML = `<i style="background:var(--brand-2)"></i>Average${mine ? '<i style="background:var(--accent)"></i>Yours' : ''}`;
 }
 
 // ---------- across brackets ----------

@@ -12,6 +12,7 @@ You need Node.js 18 or newer. There's nothing to install from npm.
 npm run dev      # live data   → http://localhost:3000
 npm run mock     # built-in test data, no internet needed
 npm test         # card roles, bracket signals, decklist parsing, API routes
+npm run test:layout  # layout bot: phones 320-412 px, tablet, landscape (needs Playwright)
 ```
 
 ## Put it online (free)
@@ -32,6 +33,10 @@ npm test         # card roles, bracket signals, decklist parsing, API routes
 | Dev server | `server.js` | Runs the same `/api` routes locally |
 
 The site's own server calls EDHREC and Scryfall, so the browser never hits their cross-site limits.
+
+## Look
+
+The page uses the Master Backbone website system: colour tokens at the top of `public/style.css`, Gloock / Figtree / IBM Plex Mono fonts, a dark header and hero, a facts strip, alternating bands and a sticky bar on phones. Restyle by changing the tokens only. It is light mode only.
 
 ## Commander Brackets
 

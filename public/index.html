@@ -2,29 +2,47 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Commander Deckbuilder</title>
-  <meta name="description" content="Average lands, removal, ramp, draw and card types for any Commander deck, from EDHREC and Scryfall.">
-  <meta name="theme-color" content="#f6f4ef">
+  <meta name="description" content="Average lands, removal, ramp, draw and card types for any Commander deck in each bracket, from EDHREC and Scryfall.">
+  <meta name="theme-color" content="#0f1a16">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icons/icon-192.png">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <header class="top">
-    <h1>Commander Deckbuilder</h1>
-    <p class="sub">What the average deck runs for your commander, and how yours compares.</p>
+    <div class="wrap">
+      <a class="brand" href="/">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="3" width="17" height="24" rx="3" fill="#c08a2a"/><rect x="10" y="6" width="17" height="24" rx="3" fill="#f2f1ec" stroke="#0f1a16" stroke-width="1.5"/></svg>
+        Commander Deckbuilder
+      </a>
+      <nav class="links" aria-label="Sections">
+        <a href="#breakdown">Breakdown</a>
+        <a href="#across">Brackets</a>
+        <a href="#yours">Your deck</a>
+        <a href="#guide">Guide</a>
+      </nav>
+    </div>
   </header>
 
-  <main>
-    <form id="search" class="card" autocomplete="off">
-      <label for="commander">Commander</label>
-      <input id="commander" name="commander" list="suggest" placeholder="e.g. Krenko, Mob Boss — or paste an EDHREC link" required>
-      <datalist id="suggest"></datalist>
-      <div class="row">
-        <div>
-          <label for="bracket">Bracket</label>
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow">Commander · EDH</p>
+        <h1>What the average deck runs</h1>
+        <p class="lede">Lands, creatures, spells, removal and ramp for any commander, in every bracket. Paste your list to see how yours compares.</p>
+      </div>
+      <form id="search" class="quick" autocomplete="off">
+        <label class="wide">Commander
+          <input id="commander" name="commander" list="suggest" placeholder="Dáin of the Ancient Halls, or an EDHREC link" required>
+        </label>
+        <datalist id="suggest"></datalist>
+        <label>Bracket
           <select id="bracket">
             <option value="">All decks</option>
             <option value="exhibition">1 · Exhibition</option>
@@ -33,73 +51,107 @@
             <option value="optimized">4 · Optimized</option>
             <option value="cedh">5 · cEDH</option>
           </select>
-        </div>
-        <div>
-          <label for="budget">Budget</label>
+        </label>
+        <label>Budget
           <select id="budget">
             <option value="">Any</option>
             <option value="budget">Budget</option>
             <option value="expensive">Expensive</option>
           </select>
+        </label>
+        <button type="submit" id="go" class="btn">Get averages</button>
+      </form>
+      <p id="status" class="status" role="status"></p>
+    </div>
+  </section>
+
+  <div id="results" hidden>
+    <div id="facts" class="facts"></div>
+
+    <section class="tight">
+      <div class="wrap stack">
+        <div id="cmdr" class="card cmdr"></div>
+        <div class="card">
+          <p class="eyebrow">Bracket check</p>
+          <div id="bracketNote"></div>
         </div>
       </div>
-      <button type="submit" id="go">Get averages</button>
-      <p id="status" class="status" role="status"></p>
-    </form>
+    </section>
 
-    <section id="results" hidden>
-      <div id="cmdr" class="card cmdr"></div>
-
-      <div class="card">
-        <h2>Bracket check</h2>
-        <div id="bracketNote"></div>
-      </div>
-
-      <div class="card">
-        <h2>Deck breakdown</h2>
-        <p class="hint">Tap a row to see the cards in it.</p>
-        <table id="table">
-          <thead><tr><th>Category</th><th class="n">Average</th><th class="n mine">Yours</th><th class="n mine">Diff</th></tr></thead>
-          <tbody></tbody>
-        </table>
+    <section id="breakdown" class="band">
+      <div class="wrap stack">
+        <div class="head">
+          <p class="eyebrow">Deck breakdown</p>
+          <h2>Card by card</h2>
+          <p class="muted">Tap a row to see the cards in it.</p>
+        </div>
+        <div class="card flush">
+          <table id="table">
+            <thead><tr><th>Category</th><th class="n">Average</th><th class="n mine">Yours</th><th class="n mine">Diff</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
         <p id="edhrecNote" class="note"></p>
+        <div class="card">
+          <p class="eyebrow">Mana curve · non-land cards</p>
+          <div id="curve" class="curve"></div>
+        </div>
       </div>
+    </section>
 
-      <div class="card">
-        <h2>Mana curve <span class="muted">(non-land cards)</span></h2>
-        <div id="curve" class="curve"></div>
-      </div>
-
-      <div class="card">
-        <h2>Across brackets</h2>
-        <p class="hint">The average deck for this commander in each of the five brackets, side by side.</p>
-        <button type="button" id="crossGo">Compare all 5 brackets</button>
+    <section id="across">
+      <div class="wrap stack">
+        <div class="head">
+          <p class="eyebrow">Across brackets</p>
+          <h2>How it shifts, 1 to 5</h2>
+          <p class="muted">This commander's average deck in each of the five brackets, side by side.</p>
+        </div>
+        <button type="button" id="crossGo" class="btn dark">Compare all 5 brackets</button>
         <p id="crossStatus" class="status" role="status"></p>
         <div id="cross"></div>
       </div>
+    </section>
 
-      <div class="card">
-        <h2>Compare your deck</h2>
-        <label for="mydeck">Paste your decklist (Moxfield, Archidekt or plain "1 Sol Ring" lines)</label>
+    <section id="yours" class="band">
+      <div class="wrap stack">
+        <div class="head">
+          <p class="eyebrow">Your deck</p>
+          <h2>Compare your list</h2>
+          <p class="muted">Paste from Moxfield, Archidekt or plain "1 Sol Ring" lines.</p>
+        </div>
+        <label for="mydeck" class="sr">Your decklist</label>
         <textarea id="mydeck" rows="8" placeholder="1 Sol Ring&#10;1 Arcane Signet&#10;30 Mountain&#10;..."></textarea>
-        <button type="button" id="compare">Compare</button>
+        <button type="button" id="compare" class="btn">Compare</button>
         <p id="compareStatus" class="status" role="status"></p>
       </div>
     </section>
-    <details class="card guide">
-      <summary>What the brackets mean</summary>
+  </div>
+
+  <section id="guide">
+    <div class="wrap stack">
+      <div class="head">
+        <p class="eyebrow">Commander Brackets</p>
+        <h2>What the brackets mean</h2>
+      </div>
       <ol id="bracketGuide" class="brackets"></ol>
       <p class="note">From the official Commander Brackets (beta) and Game Changers list, checked <span id="rulesChecked"></span>.
         Tutors no longer have a bracket limit; the strongest ones are Game Changers.
         <a href="https://magic.wizards.com/en/news/announcements/commander-brackets-beta-update-october-21-2025" target="_blank" rel="noopener">Wizards' bracket update</a></p>
-    </details>
-  </main>
+    </div>
+  </section>
 
-  <footer class="foot">
-    <p>Average decks from <a href="https://edhrec.com">EDHREC</a>. Card data from <a href="https://scryfall.com">Scryfall</a>.
-    Ramp, draw, removal, wipes, counterspells and tutors are worked out from rules text, so a few cards land in the wrong bucket — tap a row to check.
-    Not affiliated with Wizards of the Coast.</p>
+  <footer>
+    <div class="wrap">
+      <p>Average decks from <a href="https://edhrec.com">EDHREC</a>. Card data from <a href="https://scryfall.com">Scryfall</a>.
+      Ramp, draw, removal, wipes, counterspells and tutors are worked out from rules text, so a few cards land in the wrong bucket. Tap a row to check.
+      Not affiliated with Wizards of the Coast.</p>
+    </div>
   </footer>
+
+  <div id="mbar" class="mbar" hidden>
+    <div><b id="mbarTitle"></b><small id="mbarSub"></small></div>
+    <a class="btn small" href="#across">Brackets</a>
+  </div>
 
   <script type="module" src="/js/app.js"></script>
 </body>
