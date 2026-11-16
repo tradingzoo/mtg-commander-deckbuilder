@@ -56,6 +56,25 @@ export const EDHREC = {
     container: { json_dict: { card: { name: 'Krenko, Mob Boss', sanitized: 'krenko-mob-boss', color_identity: ['R'], num_decks: 23456 } } },
   },
   'commanders/krenko-mob-boss/core': { land: 38, creature: 30, container: { json_dict: { card: { name: 'Krenko, Mob Boss', color_identity: ['R'], num_decks: 1200 } } } },
+  // EDHREC's current shape (seen Nov 2026): deck grouped by card type as [name, qty] pairs.
+  'average-decks/dain-of-the-ancient-halls/upgraded': {
+    header: 'Average Deck for Dáin of the Ancient Halls - Upgraded',
+    deck: {
+      commander: ['Dáin of the Ancient Halls'],
+      commander_v2: [['Dáin of the Ancient Halls', 1]],
+      cards: {
+        Artifact: [['Sol Ring', 1], ['The Arkenstone // Seek the Heart', 1]],
+        Land: [['Command Tower', 1], ['Mountain', 8], ['Plains', 9]],
+        Creature: [['Bruenor Battlehammer', 1]],
+        Junk: 'not a list',
+      },
+    },
+    container: { json_dict: { card: { name: 'Dáin of the Ancient Halls', sanitized: 'dain-of-the-ancient-halls', color_identity: ['R', 'W'], num_decks: 192 } } },
+  },
+  'commanders/dain-of-the-ancient-halls/upgraded': {
+    creature: 29, land: 35, basic: 17, nonbasic: 18,
+    container: { json_dict: { card: { name: 'Dáin of the Ancient Halls', sanitized: 'dain-of-the-ancient-halls', color_identity: ['R', 'W'], num_decks: 192 } } },
+  },
   'commanders/krenko': { redirect: '/commanders/krenko-mob-boss' },
   'average-decks/krenko': { redirect: '/average-decks/krenko-mob-boss' },
 };

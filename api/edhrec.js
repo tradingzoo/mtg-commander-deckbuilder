@@ -39,6 +39,22 @@ function stats(body) {
   return found ? s : null;
 }
 
+// EDHREC used to send deck as ["1 Sol Ring", ...]. Since late 2026 it sends
+// { commander: [...], cards: { Artifact: [["Sol Ring", 1], ...], Land: [...] } }.
+// Both become "1 Card Name" lines; the commander line comes first.
+export function deckLines(deck) {
+  if (Array.isArray(deck)) return deck.filter(l => typeof l === 'string');
+  if (!deck || typeof deck !== 'object') return [];
+  const lines = [];
+  const pair = (p) => Array.isArray(p) && typeof p[0] === 'string' ? `${Number(p[1]) > 0 ? Number(p[1]) : 1} ${p[0]}` : null;
+  const cmdrs = Array.isArray(deck.commander_v2) ? deck.commander_v2.map(pair)
+    : Array.isArray(deck.commander) ? deck.commander.filter(n => typeof n === 'string').map(n => `1 ${n}`) : [];
+  lines.push(...cmdrs.filter(Boolean));
+  const groups = deck.cards && typeof deck.cards === 'object' ? Object.values(deck.cards) : [];
+  for (const g of groups) if (Array.isArray(g)) lines.push(...g.map(pair).filter(Boolean));
+  return lines;
+}
+
 export default async function handler(req, res) {
   const q = query(req);
   const slug = (q.get('slug') || '').toLowerCase();
@@ -57,7 +73,7 @@ export default async function handler(req, res) {
       edhrec(`commanders/${suffix}`),
     ]);
 
-    const deck = Array.isArray(avg.body?.deck) ? avg.body.deck.filter(l => typeof l === 'string') : [];
+    const deck = deckLines(avg.body?.deck);
     if (!deck.length) {
       const status = avg.status === 404 || avg.status === 403 || cmd.status === 404 ? 404 : 502;
       return send(res, status, {

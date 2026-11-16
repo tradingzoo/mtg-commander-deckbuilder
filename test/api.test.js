@@ -2,7 +2,7 @@ import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
 import { installMockFetch, calls } from './mock-fetch.js';
-import edhrec from '../api/edhrec.js';
+import edhrec, { deckLines } from '../api/edhrec.js';
 import cards from '../api/cards.js';
 import autocomplete from '../api/autocomplete.js';
 
@@ -29,6 +29,23 @@ test('edhrec: average deck + stats', async () => {
   assert.equal(r.body.edhrec_stats.land, 38);
   assert.match(r.headers['cache-control'], /s-maxage/);
   assert.ok(calls.some(c => c.headers['User-Agent']), 'sends a User-Agent');
+});
+
+test('edhrec: reads the newer grouped deck format', async () => {
+  const r = await call(edhrec, { url: '/api/edhrec?slug=dain-of-the-ancient-halls&bracket=upgraded' });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body.deck, [
+    '1 Dáin of the Ancient Halls', '1 Sol Ring', '1 The Arkenstone // Seek the Heart',
+    '1 Command Tower', '8 Mountain', '9 Plains', '1 Bruenor Battlehammer',
+  ]);
+  assert.equal(r.body.edhrec_stats.basic, 17);
+});
+
+test('edhrec: deckLines handles both formats and junk', () => {
+  assert.deepEqual(deckLines(['1 Sol Ring', 5, null]), ['1 Sol Ring']);
+  assert.deepEqual(deckLines({ commander: ['A'], cards: { Land: [['Plains', 0], ['Mountain', 3], 'bad'] } }), ['1 A', '1 Plains', '3 Mountain']);
+  assert.deepEqual(deckLines(null), []);
+  assert.deepEqual(deckLines('nope'), []);
 });
 
 test('edhrec: bracket filter path', async () => {
