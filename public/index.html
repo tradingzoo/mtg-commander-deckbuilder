@@ -51,6 +51,11 @@
       <div id="cmdr" class="card cmdr"></div>
 
       <div class="card">
+        <h2>Bracket check</h2>
+        <div id="bracketNote"></div>
+      </div>
+
+      <div class="card">
         <h2>Deck breakdown</h2>
         <p class="hint">Tap a row to see the cards in it.</p>
         <table id="table">
@@ -66,6 +71,14 @@
       </div>
 
       <div class="card">
+        <h2>Across brackets</h2>
+        <p class="hint">The average deck for this commander in each of the five brackets, side by side.</p>
+        <button type="button" id="crossGo">Compare all 5 brackets</button>
+        <p id="crossStatus" class="status" role="status"></p>
+        <div id="cross"></div>
+      </div>
+
+      <div class="card">
         <h2>Compare your deck</h2>
         <label for="mydeck">Paste your decklist (Moxfield, Archidekt or plain "1 Sol Ring" lines)</label>
         <textarea id="mydeck" rows="8" placeholder="1 Sol Ring&#10;1 Arcane Signet&#10;30 Mountain&#10;..."></textarea>
@@ -73,6 +86,13 @@
         <p id="compareStatus" class="status" role="status"></p>
       </div>
     </section>
+    <details class="card guide">
+      <summary>What the brackets mean</summary>
+      <ol id="bracketGuide" class="brackets"></ol>
+      <p class="note">From the official Commander Brackets (beta) and Game Changers list, checked <span id="rulesChecked"></span>.
+        Tutors no longer have a bracket limit; the strongest ones are Game Changers.
+        <a href="https://magic.wizards.com/en/news/announcements/commander-brackets-beta-update-october-21-2025" target="_blank" rel="noopener">Wizards' bracket update</a></p>
+    </details>
   </main>
 
   <footer class="foot">

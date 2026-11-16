@@ -63,4 +63,16 @@ tr.cards h4 { margin: 4px 0; font-size: .8rem; color: var(--muted); text-transfo
 
 .foot { font-size: .8rem; color: var(--muted); padding-bottom: 32px; }
 .foot a { color: var(--accent); }
+#bracketNote p { margin: 0 0 8px; font-size: .95rem; }
+.scroll { overflow-x: auto; margin-top: 12px; -webkit-overflow-scrolling: touch; }
+table.cross th, table.cross td { padding: 7px 5px; font-size: .9rem; }
+table.cross .n { width: auto; min-width: 44px; }
+table.cross th small { display: block; font-size: .65rem; text-transform: none; letter-spacing: 0; font-weight: 400; }
+table.cross .sel { background: #f3edfb; }
+table.cross .mine-col { color: #8a5d00; font-weight: 600; }
+.shifts { margin: 0; padding-left: 20px; font-size: .9rem; }
+.guide summary { font-weight: 700; cursor: pointer; }
+.brackets { padding-left: 0; list-style: none; margin: 12px 0 8px; }
+.brackets li { margin-bottom: 12px; font-size: .9rem; }
+.brackets .muted { font-size: .8rem; }
 @media (max-width: 520px) { tr.cards ul { columns: 1; } .n { width: 56px; } }

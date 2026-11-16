@@ -1,12 +1,13 @@
 import {
-  TYPE_ORDER, ROLE_ORDER, parseDecklist, slugFromInput, summarize, frontFace,
+  TYPE_ORDER, ROLE_ORDER, parseDecklist, slugFromInput, filtersFromInput, summarize, frontFace, lookup,
 } from './classify.js';
+import { BRACKETS, RULES_CHECKED, bracketById, bracketSignals } from './brackets.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const cardCache = new Map();   // lowercase name -> card
-const state = { avg: null, mine: null, commander: null, open: new Set() };
+const state = { avg: null, mine: null, commander: null, open: new Set(), cross: null };
 
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
@@ -43,6 +44,14 @@ async function loadCards(names) {
   return notFound;
 }
 
+// Type/role summary plus bracket signals (Game Changers, extra turns, mass land denial).
+function analyze(entries, commanderName) {
+  const s = summarize(entries, cardCache, commanderName);
+  s.signals = bracketSignals(entries, cardCache, lookup);
+  Object.assign(s.lists, s.signals.lists);
+  return s;
+}
+
 // ---------- search ----------
 
 let acTimer;
@@ -62,6 +71,10 @@ $('#search').addEventListener('submit', async (e) => {
   e.preventDefault();
   const input = $('#commander').value;
   const slug = slugFromInput(input);
+  // An EDHREC link such as .../commanders/dain-of-the-ancient-halls/upgraded sets the filters too.
+  const linked = filtersFromInput(input);
+  if (linked.bracket) $('#bracket').value = linked.bracket;
+  if (linked.budget) $('#budget').value = linked.budget;
   const bracket = $('#bracket').value;
   const budget = $('#budget').value;
   const status = $('#status');
@@ -80,9 +93,12 @@ $('#search').addEventListener('submit', async (e) => {
     const missing = await loadCards(entries.map(x => x.name));
 
     state.commander = data;
-    state.avg = summarize(entries, cardCache, data.commander.name || input);
+    state.avg = analyze(entries, data.commander.name || input);
     state.open.clear();
-    if (state.mineEntries) state.mine = summarize(state.mineEntries, cardCache, data.commander.name || input);
+    state.cross = null;
+    $('#cross').innerHTML = '';
+    setStatus($('#crossStatus'), '');
+    if (state.mineEntries) state.mine = analyze(state.mineEntries, data.commander.name || input);
     store.set('last', { input, bracket, budget });
 
     render();
@@ -105,8 +121,9 @@ $('#compare').addEventListener('click', async () => {
   try {
     const missing = await loadCards(entries.map(x => x.name));
     state.mineEntries = entries;
-    state.mine = summarize(entries, cardCache, state.commander?.commander?.name || '');
+    state.mine = analyze(entries, state.commander?.commander?.name || '');
     render();
+    if (state.cross) renderCross();
     setStatus(status, `Compared ${state.mine.total} cards.` + (missing.length ? ` Not found: ${missing.slice(0, 5).join(', ')}` : ''));
     $('#table').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (err) {
@@ -136,23 +153,37 @@ function diffCell(avg, mine, warnWhenShort) {
   return `<td class="n mine ${cls}">${txt}</td>`;
 }
 
-function rowsSpec() {
-  const a = state.avg, m = state.mine;
+// One list of metrics, shared by the main table and the cross-bracket table.
+// get(summary) -> number. key = tap-to-list category. warn = flag big shortfalls.
+function metrics(present = () => true) {
   const rows = [{ group: 'Card types' }];
   for (const t of TYPE_ORDER) {
-    if ((t === 'Battle' || t === 'Other' || t === 'Planeswalker') && !a.types[t] && !(m && m.types[t])) continue;
-    rows.push({ key: t, label: TYPE_LABELS[t], avg: a.types[t], mine: m?.types[t], warn: t === 'Land' });
+    if ((t === 'Battle' || t === 'Other' || t === 'Planeswalker') && !present((s) => s.types[t])) continue;
+    rows.push({ key: t, label: TYPE_LABELS[t], get: (s) => s.types[t], warn: t === 'Land' });
     if (t === 'Land') {
-      rows.push({ sub: true, label: 'Basic', avg: a.basics, mine: m?.basics });
-      rows.push({ sub: true, label: 'Non-basic', avg: a.nonbasics, mine: m?.nonbasics });
+      rows.push({ sub: true, label: 'Basic', get: (s) => s.basics });
+      rows.push({ sub: true, label: 'Non-basic', get: (s) => s.nonbasics });
+      rows.push({ label: 'Non-land spells', get: (s) => s.spells });
     }
   }
   rows.push({ group: 'Roles (a card can count in more than one)' });
-  for (const r of ROLE_ORDER) rows.push({ key: r, label: r, avg: a.roles[r], mine: m?.roles[r], warn: true });
+  for (const r of ROLE_ORDER) rows.push({ key: r, label: r, get: (s) => s.roles[r], warn: true });
+  rows.push({ group: 'Bracket signals' });
+  rows.push({ key: 'Game Changers', label: 'Game Changers', get: (s) => s.signals.counts.gameChangers });
+  rows.push({ key: 'Extra turns', label: 'Extra turns', get: (s) => s.signals.counts.extraTurns });
+  rows.push({ key: 'Mass land denial', label: 'Mass land denial', get: (s) => s.signals.counts.massLandDenial });
+  rows.push({ label: 'Bracket floor', get: (s) => s.signals.floor.bracket });
   rows.push({ group: 'Totals' });
-  rows.push({ label: 'Average mana value', avg: Number(a.avgCmc.toFixed(2)), mine: m ? Number(m.avgCmc.toFixed(2)) : undefined });
-  rows.push({ label: 'Cards (excluding commander)', avg: a.total, mine: m?.total });
+  rows.push({ label: 'Average mana value', get: (s) => Number(s.avgCmc.toFixed(2)) });
+  rows.push({ label: 'Cards (excluding commander)', get: (s) => s.total });
   return rows;
+}
+
+function rowsSpec() {
+  const a = state.avg, m = state.mine;
+  return metrics((get) => get(a) || (m && get(m))).map(r => r.group ? r : {
+    ...r, avg: r.get(a), mine: m ? r.get(m) : undefined,
+  });
 }
 
 function cardList(title, list) {
@@ -195,7 +226,29 @@ function render() {
     ? `EDHREC's own type averages: ${s.land ?? '?'} lands (${s.basic ?? '?'} basic), ${s.creature ?? '?'} creatures, ${s.instant ?? '?'} instants, ${s.sorcery ?? '?'} sorceries, ${s.artifact ?? '?'} artifacts, ${s.enchantment ?? '?'} enchantments.`
     : '';
 
+  renderBracketNote();
   renderCurve();
+}
+
+function floorText(who, sig) {
+  const f = sig.floor;
+  if (!f.reasons.length) return `${who}: nothing in the card list rules out Bracket 1.`;
+  return `${who}: Bracket ${f.bracket} or higher, because of ${f.reasons.filter(r => r.bracket === f.bracket).map(r => r.why).join(' and ')}.`;
+}
+
+// What the selected bracket means, and where the card limits put each deck.
+function renderBracketNote() {
+  const { commander: data, avg, mine } = state;
+  const b = bracketById(data.bracket);
+  const lines = [];
+  if (b) {
+    const gc = b.limits.gameChangers === Infinity ? 'any number of Game Changers' : b.limits.gameChangers ? `up to ${b.limits.gameChangers} Game Changers` : 'no Game Changers';
+    lines.push(`<p><strong>Bracket ${b.number} · ${esc(b.name)}.</strong> ${esc(b.summary)} ${b.minTurns ? `Expect at least ${b.minTurns} turns before anyone wins or loses.` : ''} Card limit: ${gc}.</p>`);
+  }
+  lines.push(`<p>${esc(floorText('Average deck', avg.signals))}</p>`);
+  if (mine) lines.push(`<p>${esc(floorText('Your deck', mine.signals))}</p>`);
+  lines.push('<p class="note">This is a floor from the card list only. It can\'t see two-card combos or how fast a deck really is, and the brackets also depend on intent, so a deck can belong higher.</p>');
+  $('#bracketNote').innerHTML = lines.join('');
 }
 
 function renderCurve() {
@@ -213,6 +266,73 @@ function renderCurve() {
   legend.innerHTML = `<i style="background:var(--accent)"></i>Average${mine ? '<i style="background:#d9a441"></i>Yours' : ''}`;
 }
 
+// ---------- across brackets ----------
+
+$('#crossGo').addEventListener('click', async () => {
+  const data = state.commander;
+  const status = $('#crossStatus');
+  if (!data) return;
+  $('#crossGo').disabled = true;
+  setStatus(status, 'Getting all five bracket averages from EDHREC…');
+  try {
+    const results = await Promise.allSettled(BRACKETS.map(b => {
+      const params = new URLSearchParams({ slug: data.slug, bracket: b.id });
+      if (data.budget) params.set('budget', data.budget);
+      return api(`/api/edhrec?${params}`);
+    }));
+    const decks = results.map(r => (r.status === 'fulfilled' ? r.value : null));
+    if (!decks.some(Boolean)) throw new Error(results[0].reason?.message || 'EDHREC has no bracket averages for this commander.');
+    const entries = decks.map(d => (d ? parseDecklist(d.deck.join('\n')) : null));
+    const names = entries.flatMap(e => (e ? e.map(x => x.name) : []));
+    setStatus(status, `Looking up ${new Set(names).size} cards on Scryfall…`);
+    await loadCards(names);
+    state.cross = BRACKETS.map((b, i) => ({
+      bracket: b,
+      data: decks[i],
+      summary: decks[i] ? analyze(entries[i], decks[i].commander.name || data.commander.name) : null,
+    }));
+    renderCross();
+    const missing = BRACKETS.filter((b, i) => !decks[i]).map(b => b.name);
+    setStatus(status, missing.length ? `EDHREC has no average deck for: ${missing.join(', ')}.` : '');
+  } catch (err) {
+    setStatus(status, err.message, true);
+  } finally {
+    $('#crossGo').disabled = false;
+  }
+});
+
+// Rows whose average moves most between the lowest and highest bracket with data.
+function biggestShifts(cols) {
+  if (cols.length < 2) return '';
+  const lo = cols[0], hi = cols[cols.length - 1];
+  const out = [];
+  for (const r of metrics()) {
+    if (r.group || r.sub || r.label.startsWith('Bracket floor') || r.label.startsWith('Cards')) continue;
+    const a = r.get(lo.summary), b = r.get(hi.summary);
+    const big = r.label === 'Average mana value' ? Math.abs(b - a) >= 0.25 : Math.abs(b - a) >= 2;
+    if (big) out.push({ label: r.label, a, b, d: Math.abs(b - a) / (r.label === 'Average mana value' ? 0.1 : 1) });
+  }
+  if (!out.length) return '';
+  const items = out.sort((x, y) => y.d - x.d).slice(0, 6)
+    .map(x => `<li>${esc(x.label)}: ${fmt(x.a)} → ${fmt(x.b)}</li>`).join('');
+  return `<p class="note">Biggest shifts from Bracket ${lo.bracket.number} to ${hi.bracket.number}:</p><ul class="shifts">${items}</ul>`;
+}
+
+function renderCross() {
+  const cols = state.cross.filter(c => c.summary);
+  const mine = state.mine;
+  const all = cols.map(c => c.summary).concat(mine ? [mine] : []);
+  const sel = state.commander.bracket;
+  const head = cols.map(c => `<th class="n${c.bracket.id === sel ? ' sel' : ''}" title="${esc(c.bracket.name)}">${c.bracket.number}<small>${esc(c.bracket.name)}</small></th>`).join('')
+    + (mine ? '<th class="n">You</th>' : '');
+  const rows = [`<tr><td>Decks on EDHREC</td>${cols.map(c => `<td class="n">${c.data.commander.num_decks ? Number(c.data.commander.num_decks).toLocaleString() : '?'}</td>`).join('')}${mine ? '<td class="n"></td>' : ''}</tr>`];
+  for (const r of metrics((get) => all.some(s => get(s)))) {
+    if (r.group) { rows.push(`<tr class="group"><td colspan="${cols.length + 1 + (mine ? 1 : 0)}">${esc(r.group)}</td></tr>`); continue; }
+    rows.push(`<tr class="${r.sub ? 'sub' : ''}"><td>${esc(r.label)}</td>${cols.map(c => `<td class="n${c.bracket.id === sel ? ' sel' : ''}">${fmt(r.get(c.summary))}</td>`).join('')}${mine ? `<td class="n mine-col">${fmt(r.get(mine))}</td>` : ''}</tr>`);
+  }
+  $('#cross').innerHTML = `<div class="scroll"><table class="cross"><thead><tr><th>Category</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table></div>${biggestShifts(cols)}`;
+}
+
 $('#table').addEventListener('click', (e) => {
   const row = e.target.closest('tr.cat');
   if (!row) return;
@@ -220,6 +340,15 @@ $('#table').addEventListener('click', (e) => {
   state.open.has(k) ? state.open.delete(k) : state.open.add(k);
   render();
 });
+
+$('#bracketGuide').innerHTML = BRACKETS.map(b => {
+  const l = b.limits;
+  const gc = l.gameChangers === Infinity ? 'Any' : l.gameChangers ? `Up to ${l.gameChangers}` : 'None';
+  const word = { none: 'None', few: 'A few, never chained', late: 'None early', any: 'Allowed' };
+  return `<li><strong>${b.number} · ${esc(b.name)}</strong> ${b.minTurns ? `(${b.minTurns}+ turns)` : '(any turn)'}<br>${esc(b.summary)}
+    <br><span class="muted">Game Changers: ${gc} · Extra turns: ${word[l.extraTurns]} · Mass land denial: ${word[l.massLandDenial]} · 2-card combos: ${word[l.twoCardCombos]}</span></li>`;
+}).join('');
+$('#rulesChecked').textContent = RULES_CHECKED;
 
 // ---------- start ----------
 

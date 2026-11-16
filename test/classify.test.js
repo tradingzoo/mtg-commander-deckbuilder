@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CARDS, KRENKO_DECK } from './fixtures.js';
-import { rolesOf, primaryType, slugify, slugFromInput, parseDecklist, summarize, frontFace } from '../public/js/classify.js';
+import { rolesOf, primaryType, slugify, slugFromInput, filtersFromInput, parseDecklist, summarize, frontFace } from '../public/js/classify.js';
 import { slim } from '../api/cards.js';
 
 const asSlim = (c) => { const { expect, ...card } = c; return slim(card.card_faces ? (({ oracle_text, ...r }) => r)(card) : card); };
@@ -34,6 +34,16 @@ test('slugs', () => {
   assert.equal(slugFromInput('edhrec.com/commanders/tymna-the-weaver-kraum-ludevics-opus'), 'tymna-the-weaver-kraum-ludevics-opus');
 });
 
+test('EDHREC links: slug, bracket and budget', () => {
+  const dain = 'https://edhrec.com/commanders/dain-of-the-ancient-halls/upgraded/decks';
+  assert.equal(slugFromInput(dain), 'dain-of-the-ancient-halls');
+  assert.deepEqual(filtersFromInput(dain), { bracket: 'upgraded', budget: '' });
+  assert.equal(slugify('Dáin of the Ancient Halls'), 'dain-of-the-ancient-halls');
+  assert.deepEqual(filtersFromInput('https://edhrec.com/average-decks/krenko-mob-boss/core/budget'), { bracket: 'core', budget: 'budget' });
+  assert.deepEqual(filtersFromInput('edhrec.com/commanders/krenko-mob-boss/expensive'), { bracket: '', budget: 'expensive' });
+  assert.deepEqual(filtersFromInput('Krenko, Mob Boss'), { bracket: '', budget: '' });
+});
+
 test('decklist parsing', () => {
   const list = parseDecklist(`Commander
 1 Krenko, Mob Boss (FDN) 204 *F*
@@ -61,6 +71,7 @@ test('summary of the mock Krenko average deck', () => {
   assert.equal(s.total, 41);                 // commander excluded
   assert.equal(s.types.Land, 31);
   assert.equal(s.basics, 30);
+  assert.equal(s.spells, 10);                // 41 cards - 31 lands
   assert.equal(s.nonbasics, 1);
   assert.equal(s.types.Creature, 2);          // Dockside, Chieftain
   assert.equal(s.types.Instant, 2);

@@ -11,7 +11,7 @@ You need Node.js 18 or newer. There's nothing to install from npm.
 ```
 npm run dev      # live data   → http://localhost:3000
 npm run mock     # built-in test data, no internet needed
-npm test         # 42 checks: card roles, decklist parsing, API routes
+npm test         # card roles, bracket signals, decklist parsing, API routes
 ```
 
 ## Put it online (free)
@@ -26,11 +26,20 @@ npm test         # 42 checks: card roles, decklist parsing, API routes
 |---|---|---|
 | Page | `public/index.html`, `style.css`, `js/app.js` | Search, table, curve, compare |
 | Card logic | `public/js/classify.js` | Parses decklists, decides each card's type and roles |
+| Brackets | `public/js/brackets.js` | The official bracket rules, the Game Changers list, and each deck's bracket floor |
 | EDHREC | `api/edhrec.js` | Gets the average deck and EDHREC's type counts (cached 12h) |
 | Scryfall | `api/cards.js`, `api/autocomplete.js` | Card types, rules text, mana value, name suggestions |
 | Dev server | `server.js` | Runs the same `/api` routes locally |
 
 The site's own server calls EDHREC and Scryfall, so the browser never hits their cross-site limits.
+
+## Commander Brackets
+
+`public/js/brackets.js` holds the official bracket system as data: the five brackets, their expected game length, their card limits (Game Changers, extra turns, mass land denial, two-card combos) and the 53 Game Changers. The sources and the date they were last checked are at the top of the file. When Wizards updates the brackets, that file is the one to change.
+
+- **Bracket check** shows what the chosen bracket means, and the lowest bracket each deck's cards allow. That floor can't see combos, speed or intent, so a deck can belong higher.
+- **Across brackets** loads the commander's average deck in all five brackets and shows them side by side, with the biggest shifts.
+- Scryfall marks Game Changers on each card. The app trusts that flag when it's there, so it stays right even before the file is updated.
 
 ## Known limits
 

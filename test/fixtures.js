@@ -56,6 +56,19 @@ export const EDHREC = {
     container: { json_dict: { card: { name: 'Krenko, Mob Boss', sanitized: 'krenko-mob-boss', color_identity: ['R'], num_decks: 23456 } } },
   },
   'commanders/krenko-mob-boss/core': { land: 38, creature: 30, container: { json_dict: { card: { name: 'Krenko, Mob Boss', color_identity: ['R'], num_decks: 1200 } } } },
+  // More brackets, so `npm run mock` can show the cross-bracket table. Exhibition is left out on purpose.
+  'average-decks/krenko-mob-boss/upgraded': {
+    deck: KRENKO_DECK.filter(l => !l.includes('Mountain')).concat(['29 Mountain']),
+    container: { json_dict: { card: { name: 'Krenko, Mob Boss', color_identity: ['R'], num_decks: 2100 } } },
+  },
+  'average-decks/krenko-mob-boss/optimized': {
+    deck: KRENKO_DECK.filter(l => !l.includes('Mountain')).concat(['1 Lightning Bolt', '26 Mountain']),
+    container: { json_dict: { card: { name: 'Krenko, Mob Boss', color_identity: ['R'], num_decks: 640 } } },
+  },
+  'average-decks/krenko-mob-boss/cedh': {
+    deck: KRENKO_DECK.filter(l => !l.includes('Mountain') && !l.includes('Chieftain')).concat(['24 Mountain']),
+    container: { json_dict: { card: { name: 'Krenko, Mob Boss', color_identity: ['R'], num_decks: 85 } } },
+  },
   'commanders/krenko': { redirect: '/commanders/krenko-mob-boss' },
   'average-decks/krenko': { redirect: '/average-decks/krenko-mob-boss' },
 };
