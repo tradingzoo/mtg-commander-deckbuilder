@@ -69,7 +69,7 @@ function render(d) {
 
 async function find(name) {
   $('#go').disabled = true;
-  setStatus(`Checking 3 Bangkok stores for ${name}…`);
+  setStatus(`Checking 4 Bangkok stores for ${name}…`);
   try {
     const r = await fetch(`/api/find?name=${encodeURIComponent(name)}`);
     const d = await r.json().catch(() => ({}));

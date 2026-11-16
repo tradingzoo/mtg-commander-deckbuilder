@@ -71,8 +71,8 @@ export function parseShopifyProduct(prod, base, title) {
   return buyable.length ? buyable : rows.slice(0, 1);
 }
 
-async function firstPick(cardName) {
-  const base = 'https://1stpickhs-onlineshop.com';
+// 1st Pick and Power9 both run Shopify with the same card catalogue app, so one reader covers both.
+const shopify = (base) => async (cardName) => {
   const q = encodeURIComponent(cardName);
   const json = await get(`${base}/search/suggest.json?q=${q}&resources%5Btype%5D=product&resources%5Blimit%5D=10`, 'application/json');
   const hits = parseShopifySuggest(json, cardName).slice(0, 6);
@@ -82,7 +82,7 @@ async function firstPick(cardName) {
     catch { listings.push({ name: h.title, set: '', finish: '', price: null, qty: null, inStock: h.available, url: base + h.url }); }
   }
   return { listings, searchUrl: `${base}/search?q=${q}` };
-}
+};
 
 // ---------- Yannick The Gathering (server-rendered search page) ----------
 // Only in-stock products get a card; out-of-stock matches are summarised as "We know N matching products...".
@@ -143,8 +143,10 @@ async function sabai(cardName) {
 }
 
 export const STORES = [
-  { id: 'firstpick', name: '1st Pick', site: '1stpickhs-onlineshop.com', run: firstPick,
+  { id: 'firstpick', name: '1st Pick', site: '1stpickhs-onlineshop.com', run: shopify('https://1stpickhs-onlineshop.com'),
     search: (n) => `https://1stpickhs-onlineshop.com/search?q=${encodeURIComponent(n)}` },
+  { id: 'power9', name: 'Power9', site: 'power9cardstore.com', run: shopify('https://power9cardstore.com'),
+    search: (n) => `https://power9cardstore.com/search?q=${encodeURIComponent(n)}` },
   { id: 'yannick', name: 'Yannick The Gathering', site: 'yannickthegathering.com', run: yannick,
     search: (n) => `https://yannickthegathering.com/search?q=${encodeURIComponent(n)}` },
   { id: 'sabai', name: 'Sabai Cards', site: 'sabaicards.com', run: sabai,

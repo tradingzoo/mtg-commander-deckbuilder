@@ -68,3 +68,21 @@ const attr = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</
 export const SABAI_HTML = `<!DOCTYPE html><html><body><div id="app" data-page="${attr(JSON.stringify(sabaiPage))}"></div></body></html>`;
 
 export const FX = { result: 'success', rates: { USD: 1, THB: 32.5, EUR: 0.86 } };
+
+// Power9: same Shopify setup as 1st Pick. On 2026-11-16 every Gimli printing was sold out.
+export const POWER9_SUGGEST = {
+  resources: { results: { products: [
+    { available: false, handle: 'gimli-of-the-glittering-caves-the-lord-of-the-rings-tales-of-middle-earth-commander',
+      title: 'Gimli of the Glittering Caves [The Lord of the Rings: Tales of Middle-Earth Commander]', price: '52.00',
+      url: '/products/gimli-of-the-glittering-caves-the-lord-of-the-rings-tales-of-middle-earth-commander?_pos=1' },
+    { available: false, handle: 'glittering-caves-of-aglarond-gemstone-caverns-serialized',
+      title: 'Glittering Caves of Aglarond - Gemstone Caverns (Borderless) (Serialized) [LTC]', price: '329049.00', url: '/products/glittering-caves-of-aglarond?_pos=4' },
+  ] } },
+};
+export const POWER9_PRODUCT = {
+  ...FIRSTPICK_PRODUCT,
+  variants: [
+    { title: 'Near Mint', available: false, price: 7400 },
+    { title: 'Lightly Played', available: false, price: 7000 },
+  ],
+};

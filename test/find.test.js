@@ -90,7 +90,11 @@ test('/api/find: all three stores, cheapest in-stock store first, cached', async
   assert.equal(r.status, 200);
   assert.equal(r.body.card.name, CARD);
   assert.deepEqual(r.body.stores.map(s => [s.id, s.inStock, s.cheapest]),
-    [['firstpick', true, 40], ['yannick', true, 30], ['sabai', true, 720]].sort((a, b) => a[2] - b[2]));
+    [['yannick', true, 30], ['firstpick', true, 40], ['sabai', true, 720], ['power9', false, null]]);
+  const p9 = r.body.stores.find(s => s.id === 'power9');
+  assert.deepEqual(p9.listings.map(l => [l.name, l.finish, l.price, l.inStock]), [['Gimli of the Glittering Caves', 'Near Mint', 74, false]],
+    'sold-out printing shows once, the Aglarond land is left out');
+  assert.equal(p9.searchUrl, 'https://power9cardstore.com/search?q=Gimli%20of%20the%20Glittering%20Caves');
   assert.equal(r.body.online.usdToThb, 32.5);
   assert.ok(Math.abs(r.body.online.eurToUsd - 1 / 0.86) < 1e-9);
   assert.match(r.body.links.hareruya, /hareruyamtg\.com.*Gimli%20of%20the%20Glittering%20Caves/);
