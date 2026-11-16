@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Commander Deckbuilder</title>
+  <meta name="description" content="Average lands, removal, ramp, draw and card types for any Commander deck, from EDHREC and Scryfall.">
+  <meta name="theme-color" content="#f6f4ef">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Commander Deckbuilder</h1>
+    <p class="sub">What the average deck runs for your commander, and how yours compares.</p>
+  </header>
+
+  <main>
+    <form id="search" class="card" autocomplete="off">
+      <label for="commander">Commander</label>
+      <input id="commander" name="commander" list="suggest" placeholder="e.g. Krenko, Mob Boss — or paste an EDHREC link" required>
+      <datalist id="suggest"></datalist>
+      <div class="row">
+        <div>
+          <label for="bracket">Bracket</label>
+          <select id="bracket">
+            <option value="">All decks</option>
+            <option value="exhibition">1 · Exhibition</option>
+            <option value="core">2 · Core</option>
+            <option value="upgraded">3 · Upgraded</option>
+            <option value="optimized">4 · Optimized</option>
+            <option value="cedh">5 · cEDH</option>
+          </select>
+        </div>
+        <div>
+          <label for="budget">Budget</label>
+          <select id="budget">
+            <option value="">Any</option>
+            <option value="budget">Budget</option>
+            <option value="expensive">Expensive</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" id="go">Get averages</button>
+      <p id="status" class="status" role="status"></p>
+    </form>
+
+    <section id="results" hidden>
+      <div id="cmdr" class="card cmdr"></div>
+
+      <div class="card">
+        <h2>Deck breakdown</h2>
+        <p class="hint">Tap a row to see the cards in it.</p>
+        <table id="table">
+          <thead><tr><th>Category</th><th class="n">Average</th><th class="n mine">Yours</th><th class="n mine">Diff</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="edhrecNote" class="note"></p>
+      </div>
+
+      <div class="card">
+        <h2>Mana curve <span class="muted">(non-land cards)</span></h2>
+        <div id="curve" class="curve"></div>
+      </div>
+
+      <div class="card">
+        <h2>Compare your deck</h2>
+        <label for="mydeck">Paste your decklist (Moxfield, Archidekt or plain "1 Sol Ring" lines)</label>
+        <textarea id="mydeck" rows="8" placeholder="1 Sol Ring&#10;1 Arcane Signet&#10;30 Mountain&#10;..."></textarea>
+        <button type="button" id="compare">Compare</button>
+        <p id="compareStatus" class="status" role="status"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>Average decks from <a href="https://edhrec.com">EDHREC</a>. Card data from <a href="https://scryfall.com">Scryfall</a>.
+    Ramp, draw, removal, wipes, counterspells and tutors are worked out from rules text, so a few cards land in the wrong bucket — tap a row to check.
+    Not affiliated with Wizards of the Coast.</p>
+  </footer>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
