@@ -18,6 +18,8 @@ export function slim(c) {
     mana_cost: c.mana_cost ?? faces[0]?.mana_cost ?? '',
     color_identity: c.color_identity || [],
     scryfall_uri: c.scryfall_uri || null,
+    // Scryfall's own Game Changers flag; missing on old cached data, so brackets.js falls back to its list.
+    ...(typeof c.game_changer === 'boolean' ? { game_changer: c.game_changer } : {}),
   };
 }
 

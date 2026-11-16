@@ -16,6 +16,25 @@ async function edhrec(path) {
   return res;
 }
 
+// EDHREC's average deck used to be a list of "1 Card Name" lines. Since late 2026 it is
+// { commander_v2: [[name, qty]], cards: { Land: [[name, qty], ...], Creature: [...] } }.
+// Both shapes come out as "qty Name" lines, commander first.
+export function deckLines(deck) {
+  if (Array.isArray(deck)) return deck.filter(l => typeof l === 'string');
+  if (!deck || typeof deck !== 'object') return [];
+  const pairs = [];
+  const commanders = Array.isArray(deck.commander_v2) ? deck.commander_v2
+    : Array.isArray(deck.commander) ? deck.commander.map(n => [n, 1]) : [];
+  pairs.push(...commanders);
+  for (const group of Object.values(deck.cards || {})) {
+    if (Array.isArray(group)) pairs.push(...group);
+  }
+  return pairs
+    .map(p => (Array.isArray(p) ? p : [p, 1]))
+    .filter(([name, qty]) => typeof name === 'string' && name.trim() && Number(qty) > 0)
+    .map(([name, qty]) => `${Math.round(Number(qty))} ${name.trim()}`);
+}
+
 function commanderInfo(body) {
   const card = body?.container?.json_dict?.card || {};
   const img = Array.isArray(card.image_uris) ? card.image_uris[0] : card.image_uris;
@@ -57,7 +76,7 @@ export default async function handler(req, res) {
       edhrec(`commanders/${suffix}`),
     ]);
 
-    const deck = Array.isArray(avg.body?.deck) ? avg.body.deck.filter(l => typeof l === 'string') : [];
+    const deck = deckLines(avg.body?.deck);
     if (!deck.length) {
       const status = avg.status === 404 || avg.status === 403 || cmd.status === 404 ? 404 : 502;
       return send(res, status, {

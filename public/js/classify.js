@@ -29,9 +29,19 @@ export function slugify(name) {
 // https://edhrec.com/commanders/krenko-mob-boss  or  .../average-decks/krenko-mob-boss/core
 export function slugFromInput(input) {
   const text = String(input || '').trim();
-  const m = text.match(/edhrec\.com\/(?:commanders|average-decks)\/([a-z0-9-]+)/i);
+  const m = text.match(/edhrec\.com\/(?:commanders|average-decks|decks)\/([a-z0-9-]+)/i);
   if (m) return m[1].toLowerCase();
   return slugify(text);
+}
+
+// The bracket and budget in an EDHREC link, e.g. .../commanders/dain-of-the-ancient-halls/upgraded/decks
+export function filtersFromInput(input) {
+  const m = String(input || '').match(/edhrec\.com\/(?:commanders|average-decks|decks)\/[a-z0-9-]+((?:\/[a-z0-9-]+)*)/i);
+  const parts = m ? m[1].toLowerCase().split('/').filter(Boolean) : [];
+  return {
+    bracket: parts.find(p => BRACKETS.includes(p) && p) || '',
+    budget: parts.find(p => BUDGETS.includes(p) && p) || '',
+  };
 }
 
 const SECTION_HEADERS = /^(commander|commanders|deck|decklist|main|mainboard|sideboard|maybeboard|companion|tokens?|lands?|creatures?|instants?|sorcer(y|ies)|artifacts?|enchantments?|planeswalkers?|battles?|other)\s*:?\s*(\(\d+\))?$/i;
@@ -183,6 +193,7 @@ export function summarize(entries, cards, commanderName = '') {
   return {
     total, types, roles, lists, curve, unknown,
     basics, nonbasics: types.Land - basics,
+    spells: total - types.Land,       // every non-land card, unknown ones included
     avgCmc: cmcCount ? cmcSum / cmcCount : 0,
   };
 }

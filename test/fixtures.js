@@ -56,6 +56,31 @@ export const EDHREC = {
     container: { json_dict: { card: { name: 'Krenko, Mob Boss', sanitized: 'krenko-mob-boss', color_identity: ['R'], num_decks: 23456 } } },
   },
   'commanders/krenko-mob-boss/core': { land: 38, creature: 30, container: { json_dict: { card: { name: 'Krenko, Mob Boss', color_identity: ['R'], num_decks: 1200 } } } },
+  // More brackets, so `npm run mock` can show the cross-bracket table. Exhibition is left out on purpose.
+  'average-decks/krenko-mob-boss/upgraded': {
+    deck: KRENKO_DECK.filter(l => !l.includes('Mountain')).concat(['29 Mountain']),
+    container: { json_dict: { card: { name: 'Krenko, Mob Boss', color_identity: ['R'], num_decks: 2100 } } },
+  },
+  // The newer EDHREC shape: commander_v2 plus cards grouped by type as [name, qty] pairs.
+  'average-decks/krenko-mob-boss/optimized': {
+    deck: {
+      commander: ['Krenko, Mob Boss'],
+      commander_v2: [['Krenko, Mob Boss', 1]],
+      cards: {
+        Artifact: [['Sol Ring', 1], ['Arcane Signet', 1], ['Skullclamp', 1]],
+        Creature: [['Dockside Extortionist', 1], ['Goblin Chieftain', 1]],
+        Instant: [['Lightning Bolt', 2], ['Chaos Warp', 1]],
+        Sorcery: [["Jeska's Will", 1], ['Blasphemous Act', 1]],
+        Enchantment: [['Fable of the Mirror-Breaker // Reflection of Kiki-Jiki', 1]],
+        Land: [['Command Tower', 1], ['Mountain', 26]],
+      },
+    },
+    container: { json_dict: { card: { name: 'Krenko, Mob Boss', color_identity: ['R'], num_decks: 640 } } },
+  },
+  'average-decks/krenko-mob-boss/cedh': {
+    deck: KRENKO_DECK.filter(l => !l.includes('Mountain') && !l.includes('Chieftain')).concat(['24 Mountain']),
+    container: { json_dict: { card: { name: 'Krenko, Mob Boss', color_identity: ['R'], num_decks: 85 } } },
+  },
   'commanders/krenko': { redirect: '/commanders/krenko-mob-boss' },
   'average-decks/krenko': { redirect: '/average-decks/krenko-mob-boss' },
 };
