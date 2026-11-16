@@ -14,7 +14,7 @@ mkdirSync(out, { recursive: true });
 const PORT = 3456;
 const SIZES = [[320, 568], [360, 740], [390, 844], [412, 915], [800, 1280], [780, 360]];
 
-const server = spawn(process.execPath, ['dev-server.js', '--mock'], { cwd: root, env: { ...process.env, PORT: String(PORT) }, stdio: 'ignore' });
+const server = spawn(process.execPath, ['server.js', '--mock'], { cwd: root, env: { ...process.env, PORT: String(PORT) }, stdio: 'ignore' });
 await new Promise(r => setTimeout(r, 800));
 
 // Everything wider than the screen, except inside a sideways-scrolling box.

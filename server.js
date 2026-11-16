@@ -1,4 +1,4 @@
-// Local dev server (not deployed): `npm run dev` then open http://localhost:3000
+// Local dev server: `npm run dev` then open http://localhost:3000
 // Serves /public and runs the /api routes the same way Vercel does. No dependencies.
 import http from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
