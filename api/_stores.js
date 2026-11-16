@@ -105,7 +105,7 @@ export function parseYannick(html, cardName, base = 'https://yannickthegathering
     const set = (title.match(/\(([A-Z0-9]{3,5})\)(?:\s+\w+)?\s*$/) || [])[1] || '';
     listings.push({
       name: title.replace(/\s*\([A-Z0-9]{3,5}\)(\s+\w+)?\s*$/, '').replace(/\s*\(\d+\)\s*$/, '') + (/\bJapanese\s*$/.test(title) ? ' (Japanese)' : ''),
-      set, finish: options[0] || '', price, qty: qtyText, inStock,
+      set, finish: options[0] || stripTags(between(art, 'product-variant-current">', '</p>')), price, qty: qtyText, inStock,
       url: href ? new URL(href, base).href.split('?')[0] : '',
     });
   }
