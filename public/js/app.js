@@ -7,7 +7,7 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const cardCache = new Map();   // lowercase name -> card
-const state = { avg: null, mine: null, commander: null, open: new Set(), cross: null };
+const state = { avg: null, mine: null, commander: null, open: new Set(), cross: null, themes: null };
 
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
@@ -101,10 +101,12 @@ $('#search').addEventListener('submit', async (e) => {
     if (state.mineEntries) state.mine = analyze(state.mineEntries, data.commander.name || input);
     store.set('last', { input, bracket, budget });
 
+    startThemes(data, linked.tag);
     render();
     setStatus(status, missing.length ? `Done. ${missing.length} card(s) not found on Scryfall: ${missing.slice(0, 5).join(', ')}` : '');
     $('#results').hidden = false;
     $('#results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    loadThemes();
   } catch (err) {
     setStatus(status, err.message, true);
   } finally {
@@ -124,6 +126,7 @@ $('#compare').addEventListener('click', async () => {
     state.mine = analyze(entries, state.commander?.commander?.name || '');
     render();
     if (state.cross) renderCross();
+    if (state.themes) renderThemes();
     setStatus(status, `Compared ${state.mine.total} cards.` + (missing.length ? ` Not found: ${missing.slice(0, 5).join(', ')}` : ''));
     $('#table').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (err) {
@@ -155,7 +158,7 @@ function diffCell(avg, mine, warnWhenShort) {
 
 // One list of metrics, shared by the main table and the cross-bracket table.
 // get(summary) -> number. key = tap-to-list category. warn = flag big shortfalls.
-function metrics(present = () => true) {
+function metrics(present = () => true, { curve = false } = {}) {
   const rows = [{ group: 'Card types' }];
   for (const t of TYPE_ORDER) {
     if ((t === 'Battle' || t === 'Other' || t === 'Planeswalker') && !present((s) => s.types[t])) continue;
@@ -173,6 +176,10 @@ function metrics(present = () => true) {
   rows.push({ key: 'Extra turns', label: 'Extra turns', get: (s) => s.signals.counts.extraTurns });
   rows.push({ key: 'Mass land denial', label: 'Mass land denial', get: (s) => s.signals.counts.massLandDenial });
   rows.push({ label: 'Bracket floor', get: (s) => s.signals.floor.bracket });
+  if (curve) {
+    rows.push({ group: 'Mana curve (non-land cards)' });
+    for (let i = 0; i < 8; i++) rows.push({ label: `Mana value ${i === 7 ? '7+' : i}`, get: (s) => s.curve[i] });
+  }
   rows.push({ group: 'Totals' });
   rows.push({ label: 'Average mana value', get: (s) => Number(s.avgCmc.toFixed(2)) });
   rows.push({ label: 'Cards (excluding commander)', get: (s) => s.total });
@@ -348,6 +355,158 @@ function renderCross() {
     rows.push(`<tr class="${r.sub ? 'sub' : ''}"><td>${esc(r.label)}</td>${cols.map(c => `<td class="n${c.bracket.id === sel ? ' sel' : ''}">${fmt(r.get(c.summary))}</td>`).join('')}${mine ? `<td class="n mine-col">${fmt(r.get(mine))}</td>` : ''}</tr>`);
   }
   $('#cross').innerHTML = `<div class="scroll"><table class="cross"><thead><tr><th>Category</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table></div>${biggestShifts(cols)}`;
+}
+
+// ---------- by theme ----------
+
+const THEME_DEFAULT = 4;     // themes picked for you on a new search
+const THEME_MAX = 6;         // most columns at once, so the table stays readable on a phone
+const SMALL_SAMPLE = 10;     // fewer decks than this and an average is rough
+
+// New search: list EDHREC's popular themes and pick the biggest few (plus one named in a pasted link).
+function startThemes(data, linkedTag) {
+  const list = (data.themes || []).slice(0, 12);
+  if (linkedTag && !list.some(t => t.slug === linkedTag)) list.unshift({ slug: linkedTag, name: linkedTag.replace(/-/g, ' '), count: null });
+  const picked = list.filter(t => t.count == null || t.count >= 3).slice(0, THEME_DEFAULT).map(t => t.slug);
+  if (linkedTag && !picked.includes(linkedTag)) picked.splice(THEME_DEFAULT - 1, 1, linkedTag);
+  state.themes = { run: (state.themes?.run || 0) + 1, list, selected: new Set(picked), loaded: new Map(), failed: new Map() };
+  $('#themeTable').innerHTML = '';
+  $('#themeNotes').innerHTML = '';
+  setStatus($('#themeStatus'), list.length ? '' : 'EDHREC lists no themes for this commander at these filters.');
+  renderChips();
+}
+
+function renderChips() {
+  const t = state.themes;
+  $('#themeChips').innerHTML = t.list.map(x => `<button type="button" class="chip" data-tag="${esc(x.slug)}" aria-pressed="${t.selected.has(x.slug)}">${esc(x.name)}${x.count != null ? `<small>${x.count}</small>` : ''}</button>`).join('');
+}
+
+$('#themeChips').addEventListener('click', (e) => {
+  const btn = e.target.closest('.chip');
+  const t = state.themes;
+  if (!btn || !t) return;
+  const tag = btn.dataset.tag;
+  if (t.selected.has(tag)) t.selected.delete(tag);
+  else if (t.selected.size >= THEME_MAX) return setStatus($('#themeStatus'), `Up to ${THEME_MAX} themes at once. Tap one to remove it first.`, true);
+  else t.selected.add(tag);
+  renderChips();
+  loadThemes();
+});
+
+// Fetch the picked themes we don't have yet, then redraw.
+async function loadThemes() {
+  const t = state.themes, data = state.commander;
+  if (!t || !data) return;
+  const run = t.run;
+  const todo = [...t.selected].filter(tag => !t.loaded.has(tag) && !t.failed.has(tag));
+  const status = $('#themeStatus');
+  if (todo.length) {
+    setStatus(status, `Getting ${todo.length} theme average${todo.length > 1 ? 's' : ''} from EDHREC…`);
+    const results = await Promise.allSettled(todo.map(tag => {
+      const params = new URLSearchParams({ slug: data.slug, tag });
+      if (data.bracket) params.set('bracket', data.bracket);
+      if (data.budget) params.set('budget', data.budget);
+      return api(`/api/edhrec?${params}`);
+    }));
+    if (run !== t.run) return;           // a newer search started meanwhile
+    const got = [];
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled') got.push([todo[i], r.value, parseDecklist(r.value.deck.join('\n'))]);
+      else t.failed.set(todo[i], r.reason?.message || 'failed');
+    });
+    try {
+      await loadCards(got.flatMap(([, , e]) => e.map(x => x.name)));
+    } catch (err) {
+      return setStatus(status, err.message, true);
+    }
+    if (run !== t.run) return;
+    for (const [tag, d, entries] of got) {
+      t.loaded.set(tag, { data: d, entries, summary: analyze(entries, d.commander.name || data.commander.name) });
+    }
+  }
+  const failed = [...t.selected].filter(tag => t.failed.has(tag)).map(tag => themeName(tag));
+  setStatus(status, failed.length ? `EDHREC has no average deck for: ${failed.join(', ')}.` : '', !!failed.length);
+  renderThemes();
+}
+
+const themeName = (tag) => state.themes.list.find(x => x.slug === tag)?.name || tag;
+
+// Names in a deck, without basics or the commander, for overlap counts.
+function nameSet(entries) {
+  const out = new Set();
+  const cmdr = frontFace(state.commander?.commander?.name || '').toLowerCase();
+  for (const { name } of entries) {
+    const c = lookup(cardCache, name);
+    if (c && /\bBasic\b/.test(c.type_line)) continue;
+    if (frontFace(name).toLowerCase() === cmdr) continue;
+    out.add(frontFace(c ? c.name : name).toLowerCase());
+  }
+  return out;
+}
+
+function nameList(names, limit = 14) {
+  const all = [...names].map(n => lookup(cardCache, n)?.name || n).sort((a, b) => a.localeCompare(b));
+  if (!all.length) return '<p class="note">None.</p>';
+  const more = all.length > limit ? `<li class="muted">and ${all.length - limit} more</li>` : '';
+  return `<ul>${all.slice(0, limit).map(n => `<li>${esc(n)}</li>`).join('')}${more}</ul>`;
+}
+
+// The rows where a theme's average moves most from the overall average.
+function standouts(theme, all) {
+  const out = [];
+  for (const r of metrics()) {
+    if (r.group || r.sub || r.label.startsWith('Bracket floor') || r.label.startsWith('Cards')) continue;
+    const a = r.get(all), b = r.get(theme);
+    const mv = r.label === 'Average mana value';
+    if (mv ? Math.abs(b - a) >= 0.15 : Math.abs(b - a) >= 2) out.push({ label: r.label, a, b, d: Math.abs(b - a) / (mv ? 0.1 : 1) });
+  }
+  return out.sort((x, y) => y.d - x.d).slice(0, 5);
+}
+
+function renderThemes() {
+  const t = state.themes, mine = state.mine, avg = state.avg;
+  const cols = [...t.selected].filter(tag => t.loaded.has(tag)).map(tag => ({ tag, name: themeName(tag), ...t.loaded.get(tag) }))
+    .sort((a, b) => (b.data.commander.num_decks || 0) - (a.data.commander.num_decks || 0));
+  if (!cols.length) { $('#themeTable').innerHTML = ''; $('#themeNotes').innerHTML = ''; return; }
+
+  const decks = (d) => d.commander.num_decks;
+  const small = cols.some(c => decks(c.data) && decks(c.data) < SMALL_SAMPLE);
+  const all = [avg, ...cols.map(c => c.summary)].concat(mine ? [mine] : []);
+  const width = cols.length + 2 + (mine ? 1 : 0);
+  const head = `<th class="n all">All</th>` + cols.map(c => `<th class="n">${esc(c.name)}${decks(c.data) && decks(c.data) < SMALL_SAMPLE ? '*' : ''}</th>`).join('') + (mine ? '<th class="n">You</th>' : '');
+  const num = (d) => (d ? Number(d).toLocaleString() : '?');
+  const rows = [`<tr><td>Decks on EDHREC</td><td class="n all">${num(state.commander.commander.num_decks)}</td>${cols.map(c => `<td class="n">${num(decks(c.data))}</td>`).join('')}${mine ? '<td class="n"></td>' : ''}</tr>`];
+  for (const r of metrics((get) => all.some(s => get(s)), { curve: true })) {
+    if (r.group) { rows.push(`<tr class="group"><td colspan="${width}">${esc(r.group)}</td></tr>`); continue; }
+    rows.push(`<tr class="${r.sub ? 'sub' : ''}"><td>${esc(r.label)}</td><td class="n all">${fmt(r.get(avg))}</td>${cols.map(c => `<td class="n">${fmt(r.get(c.summary))}</td>`).join('')}${mine ? `<td class="n mine-col">${fmt(r.get(mine))}</td>` : ''}</tr>`);
+  }
+  $('#themeTable').innerHTML = `<div class="scroll"><table class="cross themes"><thead><tr><th>Category</th>${head}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`
+    + (small ? `<p class="note">* Fewer than ${SMALL_SAMPLE} decks, so treat that average as rough.</p>` : '');
+
+  // Per theme: what moves, which cards it adds and drops, and (with your list) what you're missing.
+  const base = nameSet(parseDecklist(state.commander.deck.join('\n')));
+  const mineSet = state.mineEntries && mine ? nameSet(state.mineEntries) : null;
+  const notes = [];
+  if (mineSet) {
+    const overlap = cols.map(c => ({ name: c.name, n: [...nameSet(c.entries)].filter(x => mineSet.has(x)).length }))
+      .concat([{ name: 'the overall average', n: [...base].filter(x => mineSet.has(x)).length }])
+      .sort((a, b) => b.n - a.n);
+    notes.push(`<p class="closest"><strong>Closest to your deck: ${esc(overlap[0].name)}</strong>, with ${overlap[0].n} cards in common (not counting basics). ${overlap.slice(1).map(o => `${esc(o.name)} ${o.n}`).join(' · ')}.</p>`);
+  }
+  for (const c of cols) {
+    const set = nameSet(c.entries);
+    const adds = [...set].filter(x => !base.has(x));
+    const drops = [...base].filter(x => !set.has(x));
+    const st = standouts(c.summary, avg);
+    const shifts = st.length ? `<ul class="shifts">${st.map(x => `<li>${esc(x.label)}: ${fmt(x.a)} → ${fmt(x.b)}</li>`).join('')}</ul>` : '<p class="note">No row moves by 2 or more cards from the overall average.</p>';
+    const missing = mineSet ? `<h4>In the ${esc(c.name)} average, not in your deck</h4>${nameList([...set].filter(x => !mineSet.has(x)))}` : '';
+    notes.push(`<details class="theme"><summary>${esc(c.name)} <small>· ${num(decks(c.data))} decks · <a href="${esc(c.data.edhrec_url)}" target="_blank" rel="noopener">EDHREC</a></small></summary>
+      <h4>Biggest changes from the overall average</h4>${shifts}
+      <h4>Cards it adds</h4>${nameList(adds)}
+      <h4>Cards it drops</h4>${nameList(drops)}
+      ${missing}</details>`);
+  }
+  $('#themeNotes').innerHTML = notes.join('');
 }
 
 $('#table').addEventListener('click', (e) => {

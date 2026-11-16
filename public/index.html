@@ -23,6 +23,7 @@
       </a>
       <nav class="links" aria-label="Sections">
         <a href="#breakdown">Breakdown</a>
+        <a href="#themes">Themes</a>
         <a href="#across">Brackets</a>
         <a href="#yours">Your deck</a>
         <a href="#guide">Guide</a>
@@ -99,7 +100,21 @@
       </div>
     </section>
 
-    <section id="across">
+    <section id="themes">
+      <div class="wrap stack">
+        <div class="head">
+          <p class="eyebrow">By theme</p>
+          <h2>Equipment, tokens and more</h2>
+          <p class="muted">EDHREC's average deck for each popular theme of this commander, at the same bracket and budget. Tap a theme to add or remove it.</p>
+        </div>
+        <div id="themeChips" class="chips" role="group" aria-label="Themes"></div>
+        <p id="themeStatus" class="status" role="status"></p>
+        <div id="themeTable"></div>
+        <div id="themeNotes" class="stack"></div>
+      </div>
+    </section>
+
+    <section id="across" class="band">
       <div class="wrap stack">
         <div class="head">
           <p class="eyebrow">Across brackets</p>
@@ -112,7 +127,7 @@
       </div>
     </section>
 
-    <section id="yours" class="band">
+    <section id="yours">
       <div class="wrap stack">
         <div class="head">
           <p class="eyebrow">Your deck</p>

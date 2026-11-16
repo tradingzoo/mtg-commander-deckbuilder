@@ -1,5 +1,6 @@
-// GET /api/edhrec?slug=krenko-mob-boss&bracket=core&budget=budget
-// Returns the commander's EDHREC average deck plus EDHREC's own type averages.
+// GET /api/edhrec?slug=krenko-mob-boss&bracket=core&tag=tokens&budget=budget
+// Returns the commander's EDHREC average deck plus EDHREC's own type averages and its popular themes.
+// A theme (tag) narrows it to decks tagged with that theme, e.g. Dáin + upgraded + equipment.
 import { send, query, getJson } from './_lib.js';
 
 const BRACKETS = new Set(['exhibition', 'core', 'upgraded', 'optimized', 'cedh']);
@@ -48,6 +49,21 @@ function commanderInfo(body) {
   };
 }
 
+// EDHREC's "Popular tags": [{ slug, value, count }] on the average-deck page (tag_counts) and the
+// commander page (panels.taglinks). count = decks with that tag at these filters.
+export function themes(...bodies) {
+  for (const body of bodies) {
+    const list = Array.isArray(body?.tag_counts) ? body.tag_counts
+      : Array.isArray(body?.panels?.taglinks) ? body.panels.taglinks : null;
+    if (!list) continue;
+    return list
+      .filter(t => t && typeof t.slug === 'string' && /^[a-z0-9-]{1,60}$/.test(t.slug) && Number(t.count) > 0)
+      .map(t => ({ slug: t.slug, name: String(t.value || t.slug), count: Math.round(Number(t.count)) }))
+      .sort((a, b) => b.count - a.count);
+  }
+  return [];
+}
+
 function stats(body) {
   if (!body) return null;
   const s = {};
@@ -63,17 +79,21 @@ export default async function handler(req, res) {
   const slug = (q.get('slug') || '').toLowerCase();
   const bracket = (q.get('bracket') || '').toLowerCase();
   const budget = (q.get('budget') || '').toLowerCase();
+  const tag = (q.get('tag') || '').toLowerCase();
 
   if (!/^[a-z0-9-]{2,120}$/.test(slug)) return send(res, 400, { error: 'Enter a commander name.' });
   if (bracket && !BRACKETS.has(bracket)) return send(res, 400, { error: 'Unknown bracket.' });
   if (budget && !BUDGETS.has(budget)) return send(res, 400, { error: 'Unknown budget.' });
+  if (tag && (!/^[a-z0-9-]{1,60}$/.test(tag) || BRACKETS.has(tag) || BUDGETS.has(tag))) return send(res, 400, { error: 'Unknown theme.' });
 
-  const suffix = [slug, bracket, budget].filter(Boolean).join('/');
+  // EDHREC's order is commander / bracket / theme / budget; any other order is a 403.
+  const suffix = [slug, bracket, tag, budget].filter(Boolean).join('/');
 
   try {
+    // The average-deck page carries the type counts and themes too, so a theme only needs that one.
     const [avg, cmd] = await Promise.all([
       edhrec(`average-decks/${suffix}`),
-      edhrec(`commanders/${suffix}`),
+      tag ? Promise.resolve({ status: 0, body: null }) : edhrec(`commanders/${suffix}`),
     ]);
 
     const deck = deckLines(avg.body?.deck);
@@ -81,17 +101,18 @@ export default async function handler(req, res) {
       const status = avg.status === 404 || avg.status === 403 || cmd.status === 404 ? 404 : 502;
       return send(res, status, {
         error: status === 404
-          ? `EDHREC has no average deck for "${slug}"${bracket || budget ? ' with those filters' : ''}. Check the spelling, or paste the commander's EDHREC link.`
+          ? `EDHREC has no average deck for "${slug}"${tag ? ` with the ${tag} theme` : ''}${bracket || budget ? ' with those filters' : ''}. Check the spelling, or paste the commander's EDHREC link.`
           : 'EDHREC did not respond properly. Try again in a minute.',
       });
     }
 
     const info = commanderInfo(cmd.body?.container ? cmd.body : avg.body);
     send(res, 200, {
-      slug, bracket, budget,
+      slug, bracket, budget, tag,
       commander: info,
       deck,
       edhrec_stats: stats(cmd.body) || stats(avg.body),
+      themes: themes(avg.body, cmd.body),
       edhrec_url: `https://edhrec.com/average-decks/${suffix}`,
       fetched_at: new Date().toISOString(),
     }, 60 * 60 * 12);

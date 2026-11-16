@@ -5,10 +5,12 @@ export const TYPE_ORDER = [
   'Enchantment', 'Planeswalker', 'Battle', 'Other',
 ];
 
-export const ROLE_ORDER = ['Ramp', 'Card draw', 'Removal', 'Board wipes', 'Counterspells', 'Tutors'];
+export const ROLE_ORDER = ['Ramp', 'Card draw', 'Removal', 'Board wipes', 'Counterspells', 'Protection', 'Tutors'];
 
 export const BRACKETS = ['', 'exhibition', 'core', 'upgraded', 'optimized', 'cedh'];
 export const BUDGETS = ['', 'budget', 'expensive'];
+// Path words on EDHREC links that are pages, not themes.
+const NOT_TAGS = ['decks', 'cards', 'combos', 'similar', 'average-decks', 'commanders'];
 
 // ---------- names, slugs, decklists ----------
 
@@ -41,6 +43,8 @@ export function filtersFromInput(input) {
   return {
     bracket: parts.find(p => BRACKETS.includes(p) && p) || '',
     budget: parts.find(p => BUDGETS.includes(p) && p) || '',
+    // A theme link such as .../dain-of-the-ancient-halls/upgraded/equipment names the theme too.
+    tag: parts.find(p => !BRACKETS.includes(p) && !BUDGETS.includes(p) && !NOT_TAGS.includes(p)) || '',
   };
 }
 
@@ -88,7 +92,9 @@ const NUM = '(?:a|an|one|two|three|four|five|six|seven|x|that many|\\d+)';
 function clean(card) {
   let t = String(card.oracle_text || '').toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/\u2212/g, '-');
   t = t.replace(/\([^)]*\)/g, ' ');            // drop reminder text
-  for (const n of [card.name, frontFace(card.name)]) {
+  // Legends call themselves by their short name: "Yahenni gains indestructible".
+  const front = frontFace(card.name || '');
+  for (const n of [card.name, front, front.split(', ')[1] && front.split(', ')[0].length >= 4 ? front.split(', ')[0] : '']) {
     if (n) t = t.split(n.toLowerCase()).join('this');
   }
   return t;
@@ -119,6 +125,11 @@ const RX = {
   wipe: /\b(?:destroy|exile) (?:all|each)\b|\ball (?:other )?(?:non\w+ )?creatures get -|\beach (?:other )?creature (?:you don't control )?gets -|damage to each (?:other )?(?:non\w+ )?creature|\breturn all (?:other )?(?:nonland )?(?:creatures|permanents)|\beach player sacrifices (?:a|all|x|that many|\w+)\b|\beach opponent sacrifices all\b/,
 
   counter: /\bcounter (?:target|up to one target|that spell|that ability|it unless|all)\b|\bcounter target\b/,
+  // Gives something else hexproof/indestructible/shroud/protection/ward, phases your stuff out, or redirects a spell.
+  // A card that only protects itself ("this gains indestructible", "Trample, hexproof") is not protection.
+  protect: /\b(?:gains?|has|have)\b[^.]*\b(?:hexproof|indestructible|shroud|protection from|ward)\b/,
+  protectSelf: /\bthis (?:\w+ )?(?:gains?|has)\b/,
+  protectOther: /\b(?:permanents|creatures) you control phase out\b|\byou gain protection from\b|\bchoose (?:a )?new targets? for target\b|\bchange the targets? of target\b/,
   tutorSearch: /search your library for ([^.]*?)\bcards?\b/g,
 };
 
@@ -144,6 +155,8 @@ export function rolesOf(card) {
   if (any(RX.wipe)) roles.add('Board wipes');
 
   if (RX.counter.test(text)) roles.add('Counterspells');
+
+  if (parts.some(p => RX.protect.test(p) && !RX.protectSelf.test(p)) || RX.protectOther.test(text)) roles.add('Protection');
 
   for (const m of text.matchAll(RX.tutorSearch)) {
     if (!/\bland\b|\blands\b|\bforest|\bisland|\bswamp|\bmountain|\bplains/.test(m[1])) { roles.add('Tutors'); break; }

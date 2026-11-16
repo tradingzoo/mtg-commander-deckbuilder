@@ -119,6 +119,23 @@ table.cross .sel { background: #f6ecd6; }
 table.cross .mine-col { color: var(--mine); font-weight: 600; }
 .shifts { margin: .4rem 0 0; padding-left: 20px; }
 
+/* Themes */
+.chips { display: flex; flex-wrap: wrap; gap: .45rem; }
+.chip { font: 600 .9rem/1 var(--f-body); padding: .6rem .85rem; border-radius: 999px; border: 1.5px solid var(--brand-2); background: var(--card); color: var(--brand); cursor: pointer; min-height: 40px; }
+.chip small { font: 500 .72rem/1 var(--f-mono); color: var(--muted); margin-left: .3rem; }
+.chip[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
+.chip[aria-pressed="true"] small { color: inherit; opacity: .8; }
+.chip:disabled { opacity: .6; cursor: progress; }
+table.cross .all { background: #eef1ea; }
+details.theme { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .8rem 1rem; }
+details.theme summary { cursor: pointer; font-weight: 700; }
+details.theme summary small { font-weight: 400; color: var(--muted); }
+details.theme h4 { margin: .8rem 0 .3rem; font: 500 .7rem/1.2 var(--f-mono); letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
+details.theme ul { margin: 0; padding-left: 18px; font-size: .9rem; columns: 2; column-gap: 24px; }
+details.theme ul.shifts { columns: 1; }
+@media (max-width: 520px) { details.theme ul { columns: 1; } }
+.closest { margin: 0; font-size: .95rem; }
+
 /* Mana curve */
 .curve { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; align-items: end; height: 150px; }
 .bar { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; font-size: .75rem; color: var(--muted); }
