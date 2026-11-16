@@ -173,6 +173,40 @@ async function levelmax(cardName) {
   return { ...parseLevelmax(await get(searchUrl, 'text/html'), cardName, base), searchUrl };
 }
 
+// ---------- Nox TCG (Chiang Mai, ships across Thailand) ----------
+// JSON API behind their card search. Singles and foils are separate "variants"; in_stock=true keeps only cards they hold.
+// Each result has stock: [{ condition, quantity, price_thb }].
+const slug = (s) => norm(s).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+export function parseNox(json, cardName, foil, base = 'https://noxtcg.com') {
+  const out = [];
+  for (const r of json?.results || []) {
+    const name = String(r.name || '').replace(/\s*\(\d+\)\s*$/, '');
+    if (!titleMatches(name, cardName)) continue;
+    for (const st of r.stock || []) {
+      const qty = Number(st.quantity) || 0;
+      out.push({
+        name: r.name, set: r.set?.name || r.set?.abbreviation || '',
+        finish: [st.condition, foil || r.is_foil ? 'Foil' : ''].filter(Boolean).join(' · '),
+        price: money(st.price_thb), qty: qty || null, inStock: qty > 0,
+        url: `${base}/cards/mtg/${r.id}-${slug(r.clean_name || r.name)}`,
+      });
+    }
+  }
+  return out;
+}
+
+async function nox(cardName) {
+  const base = 'https://noxtcg.com';
+  const q = encodeURIComponent(cardName);
+  const listings = [];
+  for (const variant of ['singles', 'foils']) {
+    const json = await get(`${base}/api/games/mtg/cards?variant=${variant}&q=${q}&in_stock=true&page=1&page_size=60`, 'application/json');
+    listings.push(...parseNox(json, cardName, variant === 'foils', base));
+  }
+  return { listings, searchUrl: `${base}/cards/mtg?q=${q}` };
+}
+
 export const STORES = [
   { id: 'firstpick', name: '1st Pick', site: '1stpickhs-onlineshop.com', run: shopify('https://1stpickhs-onlineshop.com'),
     search: (n) => `https://1stpickhs-onlineshop.com/search?q=${encodeURIComponent(n)}` },
@@ -182,6 +216,8 @@ export const STORES = [
     search: (n) => `https://bigbearcards.com/search?q=${encodeURIComponent(n)}` },
   { id: 'levelmax', name: 'LeveLmax TCG', site: 'tomorrowlion.com', run: levelmax,
     search: (n) => `https://www.tomorrowlion.com/cards?q=${encodeURIComponent(n)}` },
+  { id: 'nox', name: 'Nox TCG', site: 'noxtcg.com', area: 'Chiang Mai · ships to Bangkok', run: nox,
+    search: (n) => `https://noxtcg.com/cards/mtg?q=${encodeURIComponent(n)}` },
   { id: 'yannick', name: 'Yannick The Gathering', site: 'yannickthegathering.com', run: yannick,
     search: (n) => `https://yannickthegathering.com/search?q=${encodeURIComponent(n)}` },
   { id: 'sabai', name: 'Sabai Cards', site: 'sabaicards.com', run: sabai,
@@ -199,13 +235,13 @@ export async function checkStore(store, cardName) {
     const listings = sortListings(r.listings);
     const inStock = listings.filter(l => l.inStock);
     return {
-      id: store.id, name: store.name, site: store.site, ok: true, searchUrl: r.searchUrl,
+      id: store.id, name: store.name, site: store.site, area: store.area || 'Bangkok', ok: true, searchUrl: r.searchUrl,
       inStock: inStock.length > 0, cheapest: inStock[0]?.price ?? null,
       outOfStockCount: (r.outOfStockCount || 0) + listings.filter(l => !l.inStock).length,
       listings: listings.slice(0, 12),
     };
   } catch (e) {
-    return { id: store.id, name: store.name, site: store.site, ok: false, searchUrl: store.search(cardName),
+    return { id: store.id, name: store.name, site: store.site, area: store.area || 'Bangkok', ok: false, searchUrl: store.search(cardName),
       error: e.name === 'AbortError' ? 'Timed out' : 'Could not read the store page', listings: [] };
   }
 }

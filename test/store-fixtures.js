@@ -94,3 +94,13 @@ ${lmCard('a0dd17da-9773-4a17-9aa7-4cd8958e1ef8', 'Gimli of the Glittering Caves'
 ${lmCard('7e47212d-0000-4000-8000-000000000001', 'Gimli&#x27;s Axe', 'NM', 'LTR', '12', false)}
 ${lmCard('ffdf9d2a-0000-4000-8000-000000000002', 'Gimli of the Glittering Caves', 'LP', 'LTC', '390', false)}
 </div></main></body></html>`;
+
+// Nox TCG: JSON API, shape seen for "Counterspell" on 2026-11-16 (with in_stock=true).
+export const NOX_SINGLES = { count: 2, next: null, previous: null, results: [
+  { id: 179001, name: 'Gimli of the Glittering Caves', clean_name: 'Gimli of the Glittering Caves', is_sealed: false, is_foil: false,
+    set: { id: 9, name: 'The Lord of the Rings: Tales of Middle-earth Commander', abbreviation: 'LTC' }, market_price_thb: 420,
+    stock: [{ id: 1, condition: 'EX', quantity: 2, price_thb: 380 }, { id: 2, condition: 'NM', quantity: 1, price_thb: 420 }] },
+  { id: 179002, name: "Gimli's Axe", clean_name: "Gimli's Axe", is_foil: false, set: { name: 'LTR' },
+    stock: [{ id: 3, condition: 'NM', quantity: 5, price_thb: 10 }] },
+] };
+export const NOX_FOILS = { count: 0, next: null, previous: null, results: [] };

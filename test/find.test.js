@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
 import { installMockFetch, mockStores } from './mock-fetch.js';
 import find, { onlinePrices } from '../api/find.js';
-import { titleMatches, norm, parseShopifySuggest, parseShopifyProduct, parseYannick, parseSabai, parseLevelmax, sortListings } from '../api/_stores.js';
-import { FIRSTPICK_SUGGEST, FIRSTPICK_PRODUCT, YANNICK_HTML, YANNICK_SOLD_OUT_HTML, SABAI_HTML, GIMLI_PRINTS, LEVELMAX_HTML } from './store-fixtures.js';
+import { titleMatches, norm, parseShopifySuggest, parseShopifyProduct, parseYannick, parseSabai, parseLevelmax, parseNox, sortListings } from '../api/_stores.js';
+import { FIRSTPICK_SUGGEST, FIRSTPICK_PRODUCT, YANNICK_HTML, YANNICK_SOLD_OUT_HTML, SABAI_HTML, GIMLI_PRINTS, LEVELMAX_HTML, NOX_SINGLES } from './store-fixtures.js';
 
 before(installMockFetch);
 beforeEach(() => { mockStores.sabaiDown = false; mockStores.yannickSoldOut = false; });
@@ -83,6 +83,17 @@ test('LeveLmax: name, condition, set, foil badge and price with commas', () => {
   assert.deepEqual(parseLevelmax('<p>0 ใบ</p>', CARD), { listings: [] });
 });
 
+test('Nox: one listing per condition, quantities, card page link', () => {
+  const rows = parseNox(NOX_SINGLES, CARD, false);
+  assert.deepEqual(rows.map(r => [r.finish, r.price, r.qty, r.inStock]), [['EX', 380, 2, true], ['NM', 420, 1, true]], "Gimli's Axe is left out");
+  assert.equal(rows[0].url, 'https://noxtcg.com/cards/mtg/179001-gimli-of-the-glittering-caves');
+  assert.equal(rows[0].set, 'The Lord of the Rings: Tales of Middle-earth Commander');
+  assert.equal(parseNox(NOX_SINGLES, CARD, true)[0].finish, 'EX · Foil');
+  assert.deepEqual(parseNox({ results: [{ id: 5, name: 'Arcane Signet (201)', set: {}, stock: [{ condition: 'NM', quantity: 1, price_thb: 450 }] }] }, 'Arcane Signet', false).length, 1,
+    'collector number suffix still matches');
+  assert.deepEqual(parseNox(null, CARD, false), []);
+});
+
 test('sortListings: in stock first, then cheapest', () => {
   const s = sortListings([{ price: 10, inStock: false }, { price: 50, inStock: true }, { price: 20, inStock: true }, { price: null, inStock: true }]);
   assert.deepEqual(s.map(x => x.price), [20, 50, null, 10]);
@@ -101,7 +112,9 @@ test('/api/find: all three stores, cheapest in-stock store first, cached', async
   assert.equal(r.status, 200);
   assert.equal(r.body.card.name, CARD);
   assert.deepEqual(r.body.stores.map(s => [s.id, s.inStock, s.cheapest]),
-    [['yannick', true, 30], ['firstpick', true, 40], ['levelmax', true, 390], ['sabai', true, 720], ['power9', false, null], ['bigbear', false, null]]);
+    [['yannick', true, 30], ['firstpick', true, 40], ['nox', true, 380], ['levelmax', true, 390], ['sabai', true, 720], ['power9', false, null], ['bigbear', false, null]]);
+  assert.equal(r.body.stores.find(s => s.id === 'nox').area, 'Chiang Mai · ships to Bangkok');
+  assert.equal(r.body.stores.find(s => s.id === 'sabai').area, 'Bangkok');
   assert.equal(r.body.stores.find(s => s.id === 'bigbear').ok, true, 'no listing is not an error');
   const p9 = r.body.stores.find(s => s.id === 'power9');
   assert.deepEqual(p9.listings.map(l => [l.name, l.finish, l.price, l.inStock]), [['Gimli of the Glittering Caves', 'Near Mint', 74, false]],

@@ -39,7 +39,7 @@ function storeHtml(s) {
   else if (!s.listings.length && s.outOfStockCount) note = `<p class="note">They list ${s.outOfStockCount} matching ${s.outOfStockCount === 1 ? 'copy' : 'copies'}, all sold out right now.</p>`;
   else if (!s.listings.length) note = '<p class="note">No listing for this card.</p>';
   return `<div class="card store">
-    <div class="store-top"><h3>${esc(s.name)}</h3>${tag}</div>
+    <div class="store-top"><h3>${esc(s.name)}${s.area && s.area !== 'Bangkok' ? `<small class="area">${esc(s.area)}</small>` : ''}</h3>${tag}</div>
     ${rows ? `<ul class="listings">${rows}</ul>` : ''}${note}
     <a class="note" href="${esc(safeUrl(s.searchUrl))}" target="_blank" rel="noopener">Open ${esc(s.site)} search</a>
   </div>`;
@@ -69,14 +69,14 @@ function render(d) {
 
 async function find(name) {
   $('#go').disabled = true;
-  setStatus(`Checking 6 Bangkok stores for ${name}…`);
+  setStatus(`Checking 7 Thai stores for ${name}…`);
   try {
     const r = await fetch(`/api/find?name=${encodeURIComponent(name)}`);
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || `Request failed (${r.status})`);
     render(d);
     const n = d.stores.filter(s => s.inStock).length;
-    setStatus(n ? `In stock at ${n} of ${d.stores.length} Bangkok stores.` : 'Not in stock in Bangkok right now. Online prices are below.');
+    setStatus(n ? `In stock at ${n} of ${d.stores.length} Thai stores.` : 'Not in stock in Thailand right now. Online prices are below.');
     history.replaceState(null, '', `?card=${encodeURIComponent(d.card.name)}`);
     $('#cardHead').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {

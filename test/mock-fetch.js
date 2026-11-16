@@ -1,6 +1,6 @@
 // Replaces global fetch with canned EDHREC/Scryfall answers (for tests and `npm run mock`).
 import { CARDS, EDHREC } from './fixtures.js';
-import { GIMLI, GIMLI_PRINTS, FIRSTPICK_SUGGEST, FIRSTPICK_PRODUCT, YANNICK_HTML, YANNICK_SOLD_OUT_HTML, SABAI_HTML, FX, POWER9_SUGGEST, POWER9_PRODUCT, LEVELMAX_HTML } from './store-fixtures.js';
+import { GIMLI, GIMLI_PRINTS, FIRSTPICK_SUGGEST, FIRSTPICK_PRODUCT, YANNICK_HTML, YANNICK_SOLD_OUT_HTML, SABAI_HTML, FX, POWER9_SUGGEST, POWER9_PRODUCT, LEVELMAX_HTML, NOX_SINGLES, NOX_FOILS } from './store-fixtures.js';
 
 const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
@@ -41,6 +41,9 @@ export function installMockFetch() {
     }
     if (u.hostname === 'bigbearcards.com' && u.pathname === '/search/suggest.json') return json(200, { resources: { results: { products: [] } } });
     if (u.hostname === 'www.tomorrowlion.com' && u.pathname === '/cards') return html(LEVELMAX_HTML);
+    if (u.hostname === 'noxtcg.com' && u.pathname === '/api/games/mtg/cards') {
+      return json(200, u.searchParams.get('variant') === 'foils' ? NOX_FOILS : NOX_SINGLES);
+    }
     if (u.hostname === 'yannickthegathering.com' && u.pathname === '/search') {
       return html(mockStores.yannickSoldOut ? YANNICK_SOLD_OUT_HTML : YANNICK_HTML);
     }
