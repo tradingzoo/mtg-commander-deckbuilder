@@ -2,6 +2,7 @@ import {
   TYPE_ORDER, ROLE_ORDER, parseDecklist, slugFromInput, filtersFromInput, summarize, frontFace, lookup,
 } from './classify.js';
 import { BRACKETS, bracketById, bracketSignals } from './brackets.js';
+import { splitSections, tagLabel, TAGS, bracketWarning } from './combos.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -132,6 +133,85 @@ $('#compare').addEventListener('click', async () => {
     $('#compare').disabled = false;
   }
 });
+
+// ---------- combos (Commander Spellbook) ----------
+
+$('#combosGo').addEventListener('click', async () => {
+  const status = $('#combosStatus');
+  const deck = splitSections($('#mydeck').value, parseDecklist);
+  const commanders = deck.commanders.length ? deck.commanders
+    : (state.commander?.commander?.name ? [state.commander.commander.name] : []);
+  if (!deck.main.length) return setStatus(status, 'Paste a decklist first.', true);
+  $('#combosGo').disabled = true;
+  setStatus(status, 'Checking Commander Spellbook for combos…');
+  try {
+    const data = await api('/api/combos', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commanders, main: deck.main, side: deck.side }),
+    });
+    // Prices for the missing cards come from Scryfall. They're optional, so a failure is ignored.
+    const missing = [...new Set(data.almost.flatMap(c => c.missing))];
+    if (missing.length) await loadCards(missing).catch(() => {});
+    renderCombos(data);
+    const n = data.included.length;
+    setStatus(status, `${n} combo${n === 1 ? '' : 's'} in your deck, ${data.almost_total} one card away.`);
+  } catch (err) {
+    setStatus(status, err.message, true);
+  } finally {
+    $('#combosGo').disabled = false;
+  }
+});
+
+function price(name) {
+  const p = lookup(cardCache, name)?.price_usd;
+  return p ? `$${Number(p).toFixed(2)}` : '';
+}
+
+function comboItem(c, bracketNumber) {
+  const miss = new Set(c.missing);
+  const cards = c.cards.map(n => (miss.has(n) ? `<span class="miss">+ ${esc(n)}</span>` : esc(n))).join(' · ');
+  const tone = TAGS[c.tag]?.tone || '';
+  const warn = bracketWarning(c, bracketNumber);
+  const extra = c.missing.map(n => {
+    const bits = [price(n), c.in_sideboard.includes(n) ? 'in your sideboard' : ''].filter(Boolean);
+    return bits.length ? `${esc(n)}: ${esc(bits.join(', '))}` : '';
+  }).filter(Boolean).join(' · ');
+  const needs = c.prerequisites ? c.prerequisites.split(/\r?\n/)[0] : '';
+  const pics = c.cards.map((n, i) => `<figure class="${miss.has(n) ? 'add' : ''}">
+      <img src="${esc(c.images?.[i] || '')}" alt="${esc(n)}" loading="lazy" width="146" height="204">
+      ${miss.has(n) ? '<figcaption>Add</figcaption>' : ''}</figure>`).join('');
+  return `<div class="card combo">
+    <div class="pics">${pics}</div>
+    <h3>${cards}</h3>
+    <ul>${c.results.map(r => `<li>${esc(r)}</li>`).join('')}</ul>
+    ${needs ? `<p class="pre">Needs: ${esc(needs)}</p>` : ''}
+    ${warn ? `<p class="warn">${esc(warn)}</p>` : ''}
+    <div class="meta"><span class="tag ${tone}">${esc(tagLabel(c.tag))}</span>
+      ${extra ? `<span>${extra}</span>` : ''}
+      <span>${c.popularity.toLocaleString()} decks</span>
+      ${c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">Steps</a>` : ''}</div>
+  </div>`;
+}
+
+function renderCombos(data) {
+  const bracketNumber = bracketById($('#bracket').value)?.number || null;
+  const SHOW = 8;
+  const item = (c) => comboItem(c, bracketNumber);
+  const list = (items) => items.slice(0, SHOW).map(item).join('')
+    + (items.length > SHOW
+      ? `<details class="more"><summary>${items.length - SHOW} more</summary><div class="stack">${items.slice(SHOW).map(item).join('')}</div></details>`
+      : '');
+  const deckTag = data.deck_tag
+    ? `<p class="note">Spellbook rates this list <span class="tag ${TAGS[data.deck_tag]?.tone || ''}">${esc(tagLabel(data.deck_tag))}</span>. Its tags are its own estimate, not the official brackets.</p>`
+    : '';
+  $('#combos').innerHTML = `
+    <div class="head"><p class="eyebrow">Combos you have</p></div>
+    ${data.included.length ? list(data.included) : '<p class="muted">No complete combos in this list.</p>'}
+    <div class="head"><p class="eyebrow">One card away</p><p class="muted">The card to add is marked +. Cards already in your sideboard come first.</p></div>
+    ${data.almost.length ? list(data.almost) : '<p class="muted">Nothing one card away.</p>'}
+    ${data.almost_total > data.almost.length ? `<p class="note">Showing the top ${data.almost.length} of ${data.almost_total}.</p>` : ''}
+    ${deckTag}`;
+}
 
 // ---------- render ----------
 

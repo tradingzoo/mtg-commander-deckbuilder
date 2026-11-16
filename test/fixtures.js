@@ -84,3 +84,18 @@ export const EDHREC = {
   'commanders/krenko': { redirect: '/commanders/krenko-mob-boss' },
   'average-decks/krenko': { redirect: '/average-decks/krenko-mob-boss' },
 };
+
+// Commander Spellbook variants (trimmed real shapes from find-my-combos, 2026-11-16).
+const feat = (status, name) => ({ feature: { id: 1, name, status, uncountable: true }, quantity: 1 });
+const uses = (...names) => names.map(name => ({ card: { id: 1, name }, quantity: 1, zoneLocations: ['B'] }));
+export const COMBOS = [
+  { id: '3750-5039', uses: uses('The Reaver Cleaver', 'Aggravated Assault'), bracketTag: 'S', popularity: 48512,
+    notablePrerequisites: 'The Reaver Cleaver attached to a creature with power five or greater that can attack this turn.',
+    produces: [feat('H', 'Infinite artifact ETB'), feat('C', 'Infinite artifact tokens'), feat('S', 'Infinite colored mana'), feat('S', 'Infinite combat phases')] },
+  { id: '1486-3750', uses: uses('Magda, Brazen Outlaw', 'Aggravated Assault'), bracketTag: 'S', popularity: 10920,
+    notablePrerequisites: 'You control at least 5 Dwarfs who do not have summoning sickness.', produces: [feat('S', 'Infinite combat phases')] },
+  { id: '7474-1', uses: uses('Gleaming Splendor', 'Smothering Tithe', 'Anointed Procession'), bracketTag: 'P', popularity: 7474,
+    notablePrerequisites: '', produces: [feat('H', 'Infinite draw triggers for any number of players'), feat('S', 'Near-infinite Treasure tokens')] },
+  { id: '1088-2', uses: uses('The One Ring', 'Meticulous Excavation'), bracketTag: 'S', popularity: 1088,
+    notablePrerequisites: '', produces: [feat('S', 'Lock')] },
+];
