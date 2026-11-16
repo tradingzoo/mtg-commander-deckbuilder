@@ -5,8 +5,8 @@
   "type": "module",
   "description": "Per-commander average deck breakdown (lands, creatures, instants, sorceries, removal, ramp, draw) from EDHREC + Scryfall.",
   "scripts": {
-    "dev": "node server.js",
-    "mock": "node server.js --mock",
+    "dev": "node dev-server.js",
+    "mock": "node dev-server.js --mock",
     "test": "node --test test/*.test.js",
     "test:layout": "node test/layout.js"
   },

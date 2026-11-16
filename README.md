@@ -30,7 +30,7 @@ npm run test:layout  # layout bot: phones 320-412 px, tablet, landscape (needs P
 | Brackets | `public/js/brackets.js` | The official bracket rules, the Game Changers list, and each deck's bracket floor |
 | EDHREC | `api/edhrec.js` | Gets the average deck and EDHREC's type counts (cached 12h) |
 | Scryfall | `api/cards.js`, `api/autocomplete.js` | Card types, rules text, mana value, name suggestions |
-| Dev server | `server.js` | Runs the same `/api` routes locally |
+| Dev server | `dev-server.js` | Runs the same `/api` routes locally. Not named `server.js` on purpose: Vercel would run that as the whole app and skip the `api/` functions |
 
 The site's own server calls EDHREC and Scryfall, so the browser never hits their cross-site limits.
 
