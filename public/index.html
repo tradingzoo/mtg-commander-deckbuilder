@@ -25,7 +25,6 @@
         <a href="#breakdown">Breakdown</a>
         <a href="#across">Brackets</a>
         <a href="#yours">Your deck</a>
-        <a href="#guide">Guide</a>
       </nav>
       <a class="hdr-pill" href="/find.html">Find a card</a>
     </div>
@@ -118,32 +117,24 @@
         <div class="head">
           <p class="eyebrow">Your deck</p>
           <h2>Compare your list</h2>
-          <p class="muted">Paste from Moxfield, Archidekt or plain "1 Sol Ring" lines.</p>
+          <p class="muted">Paste from Moxfield, Archidekt or plain "1 Sol Ring" lines. Compare it to the average, or find the combos it has and the ones it is one card from.</p>
         </div>
         <label for="mydeck" class="sr">Your decklist</label>
         <textarea id="mydeck" rows="8" placeholder="1 Sol Ring&#10;1 Arcane Signet&#10;30 Mountain&#10;..."></textarea>
-        <button type="button" id="compare" class="btn">Compare</button>
+        <div class="btnrow">
+          <button type="button" id="compare" class="btn">Compare</button>
+          <button type="button" id="combosGo" class="btn dark">Find combos</button>
+        </div>
         <p id="compareStatus" class="status" role="status"></p>
+        <p id="combosStatus" class="status" role="status"></p>
+        <div id="combos" class="stack"></div>
       </div>
     </section>
   </div>
 
-  <section id="guide">
-    <div class="wrap stack">
-      <div class="head">
-        <p class="eyebrow">Commander Brackets</p>
-        <h2>What the brackets mean</h2>
-      </div>
-      <ol id="bracketGuide" class="brackets"></ol>
-      <p class="note">From the official Commander Brackets (beta) and Game Changers list, checked <span id="rulesChecked"></span>.
-        Tutors no longer have a bracket limit; the strongest ones are Game Changers.
-        <a href="https://magic.wizards.com/en/news/announcements/commander-brackets-beta-update-october-21-2025" target="_blank" rel="noopener">Wizards' bracket update</a></p>
-    </div>
-  </section>
-
   <footer>
     <div class="wrap">
-      <p>Average decks from <a href="https://edhrec.com">EDHREC</a>. Card data from <a href="https://scryfall.com">Scryfall</a>.
+      <p>Average decks from <a href="https://edhrec.com">EDHREC</a>. Card data from <a href="https://scryfall.com">Scryfall</a>. Combos from <a href="https://commanderspellbook.com">Commander Spellbook</a>.
       Ramp, draw, removal, wipes, counterspells and tutors are worked out from rules text, so a few cards land in the wrong bucket. Tap a row to check.
       Not affiliated with Wizards of the Coast.</p>
     </div>

@@ -1,5 +1,6 @@
 // Replaces global fetch with canned EDHREC/Scryfall answers (for tests and `npm run mock`).
-import { CARDS, EDHREC } from './fixtures.js';
+import { CARDS, EDHREC, COMBOS } from './fixtures.js';
+import { cardKey } from '../public/js/combos.js';
 import { GIMLI, GIMLI_PRINTS, FIRSTPICK_SUGGEST, FIRSTPICK_PRODUCT, YANNICK_HTML, YANNICK_SOLD_OUT_HTML, SABAI_HTML, FX, POWER9_SUGGEST, POWER9_PRODUCT, LEVELMAX_HTML, NOX_SINGLES, NOX_FOILS } from './store-fixtures.js';
 
 const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -74,6 +75,19 @@ export function installMockFetch() {
       if (u.pathname === '/cards/autocomplete') {
         const q = (u.searchParams.get('q') || '').toLowerCase();
         return json(200, { object: 'catalog', data: CARDS.map(c => c.name).filter(n => n.toLowerCase().includes(q)) });
+      }
+    }
+    if (u.hostname === 'backend.commanderspellbook.com') {
+      const { commanders = [], main = [] } = JSON.parse(init.body || '{}');
+      const deck = new Set([...commanders, ...main].map(x => cardKey(x.card)));
+      if (deck.has(cardKey('Spellbook Down'))) return json(500, { detail: 'boom' });
+      const miss = (v) => v.uses.filter(x => !deck.has(cardKey(x.card.name))).length;
+      if (u.pathname === '/find-my-combos') {
+        return json(200, { count: 0, next: null, results: { identity: 'RW',
+          included: COMBOS.filter(v => miss(v) === 0), almostIncluded: COMBOS.filter(v => miss(v) === 1) } });
+      }
+      if (u.pathname === '/estimate-bracket') {
+        return json(200, { bracketTag: COMBOS.some(v => miss(v) === 0 && v.bracketTag === 'S') ? 'S' : 'P', combos: [] });
       }
     }
     return json(404, { error: 'mock: unknown url ' + u.href });
