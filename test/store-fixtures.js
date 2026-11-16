@@ -86,3 +86,11 @@ export const POWER9_PRODUCT = {
     { title: 'Lightly Played', available: false, price: 7000 },
   ],
 };
+
+// LeveLmax TCG (tomorrowlion.com): Next.js search page, shape seen for "sol ring" on 2026-11-16.
+const lmCard = (id, name, cond, set, price, foil) => `<div class="group"><a class="block rounded-[5%]" href="/card/${id}"><div class="relative"><div class="card-frame relative"><img src="https://x/y.jpg" alt=""/></div>${foil ? '<span class="absolute left-2 top-2">Foil</span>' : ''}<button class="absolute bottom-2"><svg width="16"><path d="M1"></path></svg></button></div></a><div class="mt-2 px-0.5"><div class="flex items-start"><a class="min-w-0 flex-1" href="/card/${id}"><h3 class="line-clamp-2 text-sm" title="${name}">${name}</h3></a><span class="inline-flex items-center" aria-label="R"><img src="/mana/R.svg" alt="R"/></span></div><div class="mt-1 flex"><span class="truncate text-xs" title="${cond} · ${set}">${cond}<!-- --> · <!-- -->${set}</span><span class="tnum shrink-0">฿ ${price}</span></div></div></div>`;
+export const LEVELMAX_HTML = `<!DOCTYPE html><html><body><main><p>2<!-- --> ใบ สำหรับ “gimli”</p><div class="grid grid-cols-2">
+${lmCard('a0dd17da-9773-4a17-9aa7-4cd8958e1ef8', 'Gimli of the Glittering Caves', 'NM', 'LTC', '1,180', true)}
+${lmCard('7e47212d-0000-4000-8000-000000000001', 'Gimli&#x27;s Axe', 'NM', 'LTR', '12', false)}
+${lmCard('ffdf9d2a-0000-4000-8000-000000000002', 'Gimli of the Glittering Caves', 'LP', 'LTC', '390', false)}
+</div></main></body></html>`;

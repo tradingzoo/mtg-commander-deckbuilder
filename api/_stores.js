@@ -71,7 +71,7 @@ export function parseShopifyProduct(prod, base, title) {
   return buyable.length ? buyable : rows.slice(0, 1);
 }
 
-// 1st Pick and Power9 both run Shopify with the same card catalogue app, so one reader covers both.
+// 1st Pick, Power9 and Big Bear all run Shopify with the same card catalogue app, so one reader covers both.
 const shopify = (base) => async (cardName) => {
   const q = encodeURIComponent(cardName);
   const json = await get(`${base}/search/suggest.json?q=${q}&resources%5Btype%5D=product&resources%5Blimit%5D=10`, 'application/json');
@@ -142,11 +142,44 @@ async function sabai(cardName) {
   return { listings: parseSabai(await get(searchUrl, 'text/html'), cardName, base), searchUrl };
 }
 
+// ---------- LeveLmax TCG (tomorrowlion.com, Next.js server-rendered search) ----------
+// Each result: <a href="/card/{id}"><h3>Name</h3></a> then <span class="truncate">NM · SET</span><span class="tnum">฿ 252</span>.
+// A "Foil" badge sits on the image link just before. The page lists only cards they have.
+export function parseLevelmax(html, cardName, base = 'https://www.tomorrowlion.com') {
+  const h = html.replace(/<!-- -->/g, '');
+  const re = /<a[^>]*href="\/card\/([0-9a-f-]+)[^"]*"[^>]*>\s*<h3[^>]*>([^<]*)<\/h3>/g;
+  const listings = [];
+  let m;
+  while ((m = re.exec(h))) {
+    const title = decodeEntities(m[2]).trim();
+    if (!titleMatches(title, cardName)) continue;
+    const after = h.slice(m.index, m.index + 2500);
+    const sp = after.match(/<span class="truncate[^"]*"[^>]*>([^<]*)<\/span>\s*<span class="tnum[^"]*"[^>]*>([^<]*)</);
+    const before = h.slice(Math.max(0, h.indexOf(`href="/card/${m[1]}`)), m.index);
+    const [cond = '', set = ''] = sp ? decodeEntities(sp[1]).split('·').map(x => x.trim()) : [];
+    listings.push({
+      name: title, set, finish: [cond, />\s*Foil\s*</.test(before) ? 'Foil' : ''].filter(Boolean).join(' · '),
+      price: sp ? money(sp[2].replace('฿', '')) : null, qty: null, inStock: true, url: `${base}/card/${m[1]}`,
+    });
+  }
+  return { listings };
+}
+
+async function levelmax(cardName) {
+  const base = 'https://www.tomorrowlion.com';
+  const searchUrl = `${base}/cards?q=${encodeURIComponent(cardName)}`;
+  return { ...parseLevelmax(await get(searchUrl, 'text/html'), cardName, base), searchUrl };
+}
+
 export const STORES = [
   { id: 'firstpick', name: '1st Pick', site: '1stpickhs-onlineshop.com', run: shopify('https://1stpickhs-onlineshop.com'),
     search: (n) => `https://1stpickhs-onlineshop.com/search?q=${encodeURIComponent(n)}` },
   { id: 'power9', name: 'Power9', site: 'power9cardstore.com', run: shopify('https://power9cardstore.com'),
     search: (n) => `https://power9cardstore.com/search?q=${encodeURIComponent(n)}` },
+  { id: 'bigbear', name: 'Big Bear Cards', site: 'bigbearcards.com', run: shopify('https://bigbearcards.com'),
+    search: (n) => `https://bigbearcards.com/search?q=${encodeURIComponent(n)}` },
+  { id: 'levelmax', name: 'LeveLmax TCG', site: 'tomorrowlion.com', run: levelmax,
+    search: (n) => `https://www.tomorrowlion.com/cards?q=${encodeURIComponent(n)}` },
   { id: 'yannick', name: 'Yannick The Gathering', site: 'yannickthegathering.com', run: yannick,
     search: (n) => `https://yannickthegathering.com/search?q=${encodeURIComponent(n)}` },
   { id: 'sabai', name: 'Sabai Cards', site: 'sabaicards.com', run: sabai,

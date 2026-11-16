@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
 import { installMockFetch, mockStores } from './mock-fetch.js';
 import find, { onlinePrices } from '../api/find.js';
-import { titleMatches, norm, parseShopifySuggest, parseShopifyProduct, parseYannick, parseSabai, sortListings } from '../api/_stores.js';
-import { FIRSTPICK_SUGGEST, FIRSTPICK_PRODUCT, YANNICK_HTML, YANNICK_SOLD_OUT_HTML, SABAI_HTML, GIMLI_PRINTS } from './store-fixtures.js';
+import { titleMatches, norm, parseShopifySuggest, parseShopifyProduct, parseYannick, parseSabai, parseLevelmax, sortListings } from '../api/_stores.js';
+import { FIRSTPICK_SUGGEST, FIRSTPICK_PRODUCT, YANNICK_HTML, YANNICK_SOLD_OUT_HTML, SABAI_HTML, GIMLI_PRINTS, LEVELMAX_HTML } from './store-fixtures.js';
 
 before(installMockFetch);
 beforeEach(() => { mockStores.sabaiDown = false; mockStores.yannickSoldOut = false; });
@@ -72,6 +72,17 @@ test('Sabai: reads the Inertia page data, quantity 0 is sold out', () => {
   assert.throws(() => parseSabai('<html>blocked</html>', CARD));
 });
 
+test('LeveLmax: name, condition, set, foil badge and price with commas', () => {
+  const { listings } = parseLevelmax(LEVELMAX_HTML, CARD);
+  assert.deepEqual(listings, [
+    { name: CARD, set: 'LTC', finish: 'NM · Foil', price: 1180, qty: null, inStock: true,
+      url: 'https://www.tomorrowlion.com/card/a0dd17da-9773-4a17-9aa7-4cd8958e1ef8' },
+    { name: CARD, set: 'LTC', finish: 'LP', price: 390, qty: null, inStock: true,
+      url: 'https://www.tomorrowlion.com/card/ffdf9d2a-0000-4000-8000-000000000002' },
+  ], "Gimli's Axe is left out, and the foil badge doesn't leak to the next card");
+  assert.deepEqual(parseLevelmax('<p>0 ใบ</p>', CARD), { listings: [] });
+});
+
 test('sortListings: in stock first, then cheapest', () => {
   const s = sortListings([{ price: 10, inStock: false }, { price: 50, inStock: true }, { price: 20, inStock: true }, { price: null, inStock: true }]);
   assert.deepEqual(s.map(x => x.price), [20, 50, null, 10]);
@@ -90,7 +101,8 @@ test('/api/find: all three stores, cheapest in-stock store first, cached', async
   assert.equal(r.status, 200);
   assert.equal(r.body.card.name, CARD);
   assert.deepEqual(r.body.stores.map(s => [s.id, s.inStock, s.cheapest]),
-    [['yannick', true, 30], ['firstpick', true, 40], ['sabai', true, 720], ['power9', false, null]]);
+    [['yannick', true, 30], ['firstpick', true, 40], ['levelmax', true, 390], ['sabai', true, 720], ['power9', false, null], ['bigbear', false, null]]);
+  assert.equal(r.body.stores.find(s => s.id === 'bigbear').ok, true, 'no listing is not an error');
   const p9 = r.body.stores.find(s => s.id === 'power9');
   assert.deepEqual(p9.listings.map(l => [l.name, l.finish, l.price, l.inStock]), [['Gimli of the Glittering Caves', 'Near Mint', 74, false]],
     'sold-out printing shows once, the Aglarond land is left out');
