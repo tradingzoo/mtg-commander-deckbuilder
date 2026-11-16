@@ -1,6 +1,7 @@
 // Replaces global fetch with canned EDHREC/Scryfall answers (for tests and `npm run mock`).
 import { CARDS, EDHREC, COMBOS } from './fixtures.js';
 import { cardKey } from '../public/js/combos.js';
+import { GIMLI, GIMLI_PRINTS, FIRSTPICK_SUGGEST, FIRSTPICK_PRODUCT, YANNICK_HTML, YANNICK_SOLD_OUT_HTML, SABAI_HTML, FX, POWER9_SUGGEST, POWER9_PRODUCT, LEVELMAX_HTML, NOX_SINGLES, NOX_FOILS } from './store-fixtures.js';
 
 const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
@@ -16,6 +17,9 @@ function findCard(name) {
 }
 
 export const calls = [];
+// Flip these in tests to see how the card finder copes with a store that is down or sold out.
+export const mockStores = { sabaiDown: false, yannickSoldOut: false };
+const html = (body) => new Response(body, { status: 200, headers: { 'Content-Type': 'text/html' } });
 
 export function installMockFetch() {
   globalThis.fetch = async (url, init = {}) => {
@@ -26,7 +30,33 @@ export function installMockFetch() {
       const key = u.pathname.replace(/^\/pages\//, '').replace(/\.json$/, '');
       return EDHREC[key] ? json(200, EDHREC[key]) : json(404, { error: 'Not found' });
     }
+    if (u.hostname === '1stpickhs-onlineshop.com') {
+      if (u.pathname === '/search/suggest.json') return json(200, FIRSTPICK_SUGGEST);
+      if (u.pathname === `/products/${FIRSTPICK_PRODUCT.handle}.js`) return json(200, FIRSTPICK_PRODUCT);
+      return json(404, {});
+    }
+    if (u.hostname === 'power9cardstore.com') {
+      if (u.pathname === '/search/suggest.json') return json(200, POWER9_SUGGEST);
+      if (u.pathname === `/products/${POWER9_PRODUCT.handle}.js`) return json(200, POWER9_PRODUCT);
+      return json(404, {});
+    }
+    if (u.hostname === 'bigbearcards.com' && u.pathname === '/search/suggest.json') return json(200, { resources: { results: { products: [] } } });
+    if (u.hostname === 'www.tomorrowlion.com' && u.pathname === '/cards') return html(LEVELMAX_HTML);
+    if (u.hostname === 'noxtcg.com' && u.pathname === '/api/games/mtg/cards') {
+      return json(200, u.searchParams.get('variant') === 'foils' ? NOX_FOILS : NOX_SINGLES);
+    }
+    if (u.hostname === 'yannickthegathering.com' && u.pathname === '/search') {
+      return html(mockStores.yannickSoldOut ? YANNICK_SOLD_OUT_HTML : YANNICK_HTML);
+    }
+    if (u.hostname === 'sabaicards.com' && u.pathname === '/products/singles') {
+      return mockStores.sabaiDown ? new Response('Forbidden', { status: 403 }) : html(SABAI_HTML);
+    }
+    if (u.hostname === 'open.er-api.com') return json(200, FX);
     if (u.hostname === 'api.scryfall.com') {
+      if (u.pathname === '/cards/search' && /gimli of the glittering caves/i.test(u.searchParams.get('q') || '')) {
+        return json(200, { object: 'list', data: GIMLI_PRINTS });
+      }
+      if (u.pathname === '/cards/named' && /^gimli/i.test(u.searchParams.get('fuzzy') || '')) return json(200, GIMLI);
       if (u.pathname === '/cards/collection') {
         const { identifiers } = JSON.parse(init.body);
         if (identifiers.length > 75) return json(422, { object: 'error' });
