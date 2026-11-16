@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
 import { installMockFetch, calls } from './mock-fetch.js';
 import combos from '../api/combos.js';
-import { cardKey, splitSections, slimCombo, rankAlmost, bracketWarning, tagLabel } from '../public/js/combos.js';
+import { cardKey, cardImage, splitSections, slimCombo, rankAlmost, bracketWarning, tagLabel } from '../public/js/combos.js';
 import { parseDecklist } from '../public/js/classify.js';
 import { COMBOS } from './fixtures.js';
 
@@ -46,6 +46,15 @@ test('slimCombo: missing cards, headline results, link', () => {
   assert.equal(c.two_card, true);
   assert.equal(c.url, 'https://commanderspellbook.com/combo/3750-5039/');
   assert.match(c.prerequisites, /power five or greater/);
+  assert.equal(c.images.length, 2);
+  assert.match(c.images[1], /cards\/named\?exact=Aggravated%20Assault&format=image/);
+});
+
+test('cardImage: Spellbook image if it is Scryfall, else Scryfall by name', () => {
+  assert.equal(cardImage({ name: 'Sol Ring', imageUriFrontNormal: 'https://cards.scryfall.io/normal/front/a/b/x.jpg' }),
+    'https://cards.scryfall.io/normal/front/a/b/x.jpg');
+  assert.match(cardImage({ name: 'Sol Ring', imageUriFrontNormal: 'javascript:alert(1)' }), /^https:\/\/api\.scryfall\.com\/cards\/named\?exact=Sol%20Ring/);
+  assert.match(cardImage({ name: 'Bofur, Reliable Guardian // Concerted Care' }), /exact=Bofur%2C%20Reliable%20Guardian&/);
 });
 
 test('rankAlmost: sideboard hits first, then popularity', () => {

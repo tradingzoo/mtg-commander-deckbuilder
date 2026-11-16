@@ -56,12 +56,22 @@ function results(produces) {
 }
 
 // Trims one Spellbook variant to what the page shows.
+// Card picture: Spellbook's own Scryfall image, or Scryfall's image redirect by exact name.
+export function cardImage(card) {
+  const src = card?.imageUriFrontNormal || card?.imageUriFrontLarge || card?.imageUriFrontSmall;
+  if (typeof src === 'string' && /^https:\/\/cards\.scryfall\.io\//.test(src)) return src;
+  const name = frontFace(String(card?.name || ''));
+  return `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&format=image&version=normal`;
+}
+
 export function slimCombo(v, have, side = new Set()) {
-  const cards = (v?.uses || []).map(u => u?.card?.name).filter(Boolean);
+  const uses = (v?.uses || []).filter(u => u?.card?.name);
+  const cards = uses.map(u => u.card.name);
   const missing = cards.filter(c => !have.has(cardKey(c)));
   return {
     id: String(v?.id || ''),
     cards,
+    images: uses.map(u => cardImage(u.card)),
     missing,
     in_sideboard: missing.filter(c => side.has(cardKey(c))),
     results: results(v?.produces),

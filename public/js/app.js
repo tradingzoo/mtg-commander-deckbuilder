@@ -177,7 +177,11 @@ function comboItem(c, bracketNumber) {
     return bits.length ? `${esc(n)}: ${esc(bits.join(', '))}` : '';
   }).filter(Boolean).join(' · ');
   const needs = c.prerequisites ? c.prerequisites.split(/\r?\n/)[0] : '';
+  const pics = c.cards.map((n, i) => `<figure class="${miss.has(n) ? 'add' : ''}">
+      <img src="${esc(c.images?.[i] || '')}" alt="${esc(n)}" loading="lazy" width="146" height="204">
+      ${miss.has(n) ? '<figcaption>Add</figcaption>' : ''}</figure>`).join('');
   return `<div class="card combo">
+    <div class="pics">${pics}</div>
     <h3>${cards}</h3>
     <ul>${c.results.map(r => `<li>${esc(r)}</li>`).join('')}</ul>
     ${needs ? `<p class="pre">Needs: ${esc(needs)}</p>` : ''}
