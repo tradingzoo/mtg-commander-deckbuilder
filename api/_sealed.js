@@ -60,6 +60,8 @@ const KINDS = [
   [/scene box/, 'scene-box'],
   [/commander (deck|precon)|precon/, 'commander-deck'],
   [/theme deck/, 'theme-deck'],
+  [/theme booster (display|box)/, 'theme-booster-box'],
+  [/theme booster/, 'theme-booster-pack'],
   [/\bbooster (display|box)\b/, 'booster-box'],
   [/\bbooster( pack)?\b/, 'booster-pack'],
 ];
@@ -112,13 +114,17 @@ export function findSet(title, index) {
 
 // ---------- Pick the TCGplayer product that is the same thing ----------
 // candidates: [{ productId, name, url, market }] from the set's groups.
+const QUALIFIERS = [/special edition/, /premium/, /compleat/, /anniversary/, /\bfoil\b/, /\bretail\b/, /\bhobby\b/, /mini/];
 const FALLBACK = { 'booster-box': ['booster-box', 'play-box', 'draft-box'], 'booster-pack': ['booster-pack', 'play-pack', 'draft-pack'] };
 
 export function matchProduct(title, candidates) {
   const want = sealedKind(title);
   if (!want.kind || want.kind === 'secret-lair' || want.lang === 'other') return null;
+  const tw = norm(title);
   const parsed = (candidates || []).map(c => ({ c, k: sealedKind(c.name) }))
-    .filter(({ k }) => k.isCase === want.isCase && k.lang === want.lang && k.isDisplay === want.isDisplay);
+    .filter(({ c, k }) => k.isCase === want.isCase && k.lang === want.lang && k.isDisplay === want.isDisplay
+      // A special version ("Special Edition Collector Booster Display") only matches a title that says so, and the other way round.
+      && QUALIFIERS.every(q => q.test(norm(c.name)) === q.test(tw)));
   for (const kind of FALLBACK[want.kind] || [want.kind]) {
     let hits = parsed.filter(({ k }) => k.kind === kind);
     if (NAMED.has(kind)) {
@@ -272,7 +278,8 @@ export function parseSabaiSealed(html, base = 'https://sabaicards.com') {
   if (!raw) throw new Error('no page data');
   const d = JSON.parse(decodeEntities(raw))?.props?.datas || {};
   const rows = (d.data || []).filter(r => Number(r.quantity) > 0 && Number(r.status ?? 1) === 1 && !NOT_MTG.test(r.name || ''))
-    .map(r => ({ title: decodeEntities(r.original_name || r.name), price: money(r.price), qty: Number(r.quantity), url: `${base}/products/view/${r.id}` }));
+    // `name` is what the product page shows. Sabai reuses listings, so original_name can be an old product's name.
+    .map(r => ({ title: decodeEntities(r.name || r.original_name), price: money(r.price), qty: Number(r.quantity), url: `${base}/products/view/${r.id}` }));
   return { rows, lastPage: Number(d.last_page) || 1 };
 }
 
@@ -303,7 +310,7 @@ export const KIND_LABEL = {
   'booster-box': 'Booster box', 'booster-pack': 'Booster pack', 'jumpstart-box': 'Jumpstart box', 'jumpstart-pack': 'Jumpstart pack',
   bundle: 'Bundle', 'gift-bundle': 'Gift bundle', prerelease: 'Prerelease pack', 'starter-kit': 'Starter kit', 'beginner-box': 'Beginner box',
   'scene-box': 'Scene box', 'draft-night': 'Draft night', 'commander-deck': 'Commander deck', 'commander-kit': 'Commander kit',
-  'theme-deck': 'Theme deck', 'deck-set': 'Deck set', 'secret-lair': 'Secret Lair', 'sample-pack': 'Sample pack', 'omega-pack': 'Omega pack',
+  'theme-deck': 'Theme deck', 'theme-booster-box': 'Theme booster box', 'theme-booster-pack': 'Theme booster', 'deck-set': 'Deck set', 'secret-lair': 'Secret Lair', 'sample-pack': 'Sample pack', 'omega-pack': 'Omega pack',
 };
 
 // The whole catalogue: every store's in-stock sealed MTG with a reference price where we can find one.

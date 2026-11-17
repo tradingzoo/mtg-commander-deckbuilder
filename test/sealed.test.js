@@ -72,6 +72,9 @@ test('matchProduct: same kind, same deck, same edition, never a case or another 
   const fin = products(24219, 24220);
   assert.equal(matchProduct('Final Fantasy Collector Booster Box', fin).productId, 618893);
   assert.equal(matchProduct('Final Fantasy Play Booster Box', fin).productId, 618890);
+  assert.equal(matchProduct('Final Fantasy - Special Edition Collector Booster Display', fin).productId, 618950);
+  assert.equal(matchProduct('Final Fantasy Collector Booster Box', fin.filter(p => p.productId !== 618893)), null, 'never falls back to the special edition');
+  assert.equal(sealedKind('Kamigawa: Neon Dynasty - Theme Booster Display').kind, 'theme-booster-box');
   assert.equal(matchProduct('Final Fantasy - Bundle', fin).productId, 618894);
   assert.equal(matchProduct('Final Fantasy - Gift Bundle', fin).productId, 618895);
   assert.equal(matchProduct('Final Fantasy Collector Booster Box (Japanese)', fin).productId, 618896);
@@ -110,7 +113,8 @@ test('store readers: in-stock sealed Magic only, prices in baht', () => {
   assert.deepEqual(y.map(o => [o.title, o.price]), [['Commander 2019 - Set of 4', 5950], ['Lorwyn Eclipsed - Bundle', 1600]], 'sold out left out');
   assert.equal(y[0].url, 'https://yannickthegathering.com/products/commander-2019-set-of-4');
   const s = parseSabaiSealed(SABAI_SEALED);
-  assert.deepEqual(s.rows.map(o => [o.title, o.price, o.qty]), [['The Hobbit Collector Booster Box', 27000, 6], ['Final Fantasy Collector Booster Box (Japanese)', 26000, 1]]);
+  assert.deepEqual(s.rows.map(o => [o.title, o.price, o.qty]), [['The Hobbit Collector Booster Box', 27000, 6],
+    ['Secrets of Strixhaven Commander (Quandrix Unlimited)', 2000, 3], ['Final Fantasy Collector Booster Box (Japanese)', 26000, 1]]);
 });
 
 test('GET /api/sealed: every store, baht reference, discount, cached', async () => {

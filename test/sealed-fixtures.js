@@ -25,7 +25,7 @@ export const TCG = {
     [618889, 'FINAL FANTASY - Play Booster Pack', 9.82], [618890, 'FINAL FANTASY - Play Booster Display', 253.39],
     [618891, 'FINAL FANTASY - Play Booster Display Case', 1488.28], [618892, 'FINAL FANTASY - Collector Booster Pack', 165.08],
     [618893, 'FINAL FANTASY - Collector Booster Display', 1549.53], [618899, 'FINAL FANTASY - Collector Booster Sample Pack', 10.18],
-    [618900, 'FINAL FANTASY - Collector Booster Omega Pack', 169.96], [618894, 'FINAL FANTASY - Bundle', 120.7],
+    [618900, 'FINAL FANTASY - Collector Booster Omega Pack', 169.96], [618950, 'FINAL FANTASY - Special Edition Collector Booster Display', 3000], [618894, 'FINAL FANTASY - Bundle', 120.7],
     [618895, 'FINAL FANTASY - Gift Bundle', 244.58], [618896, 'FINAL FANTASY - Collector Booster Display (Japanese)', 784.49],
     [600001, 'Cloud, Midgar Mercenary', 2.5, false],
   ]),
@@ -94,6 +94,7 @@ export const YANNICK_SEALED = `<html><body><p>2<!-- --> products</p>${yan('/prod
 // Sabai /products/sealed (data-page JSON).
 const sabaiPage = { props: { datas: { total: 2, per_page: 100, last_page: 1, data: [
   { id: 5748168, original_name: 'The Hobbit Collector Booster Box', name: 'The Hobbit Collector Booster Box', category: 'sealed', type: 'Booster Boxes', quantity: 6, price: 27000, status: 1 },
+  { id: 197772, original_name: 'Final Fantasy Play Booster Box', name: 'Secrets of Strixhaven Commander (Quandrix Unlimited)', category: 'sealed', quantity: 3, price: 2000, status: 1 },
   { id: 5748169, original_name: 'Final Fantasy Collector Booster Box (Japanese)', name: 'Final Fantasy Collector Booster Box (Japanese)', category: 'sealed', quantity: 1, price: 26000, status: 1 },
 ] } } };
 export const SABAI_SEALED = `<div id="app" data-page="${JSON.stringify(sabaiPage).replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"></div>`;
