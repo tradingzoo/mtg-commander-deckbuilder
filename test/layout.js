@@ -57,6 +57,13 @@ try {
       if (fsp.length) fails.push(`${tag} finder results spill: ${fsp.join(', ')}`);
       await p.waitForTimeout(700); // let the fade-in finish
       if (w === 390 || w === 800) await p.screenshot({ path: `${out}find-${tag}.png`, fullPage: true });
+      for (const pg of ['find-sealed', 'find-deals']) {
+        await p.goto(`http://localhost:${PORT}/${pg}.html`);
+        await p.waitForSelector('#offers .card', { timeout: 8000 });
+        const ssp = await spill(p, w);
+        if (ssp.length) fails.push(`${tag} ${pg} spills: ${ssp.join(', ')}`);
+        if (w === 390 || w === 800) await p.screenshot({ path: `${out}${pg}-${tag}.png`, fullPage: true });
+      }
     } catch (e) {
       fails.push(`${tag}: ${e.message.split('\n')[0]}`);
     }
