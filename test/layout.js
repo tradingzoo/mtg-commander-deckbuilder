@@ -64,6 +64,11 @@ try {
         if (ssp.length) fails.push(`${tag} ${pg} spills: ${ssp.join(', ')}`);
         if (w === 390 || w === 800) await p.screenshot({ path: `${out}${pg}-${tag}.png`, fullPage: true });
       }
+      await p.click('input[name="what"][value="singles"]');
+      await p.waitForFunction(() => /deals? among/.test(document.querySelector('#status').textContent), null, { timeout: 15000 });
+      const gsp = await spill(p, w);
+      if (gsp.length) fails.push(`${tag} singles deals spill: ${gsp.join(', ')}`);
+      if (w === 390 || w === 800) await p.screenshot({ path: `${out}find-singles-${tag}.png`, fullPage: true });
     } catch (e) {
       fails.push(`${tag}: ${e.message.split('\n')[0]}`);
     }

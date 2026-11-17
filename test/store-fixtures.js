@@ -10,10 +10,11 @@ export const GIMLI = {
 };
 
 export const GIMLI_PRINTS = [
-  { ...GIMLI, set_name: 'Tales of Middle-earth Commander', prices: { usd: '1.10', eur: '0.95' } },
-  { ...GIMLI, set_name: 'Tales of Middle-earth Commander Extended Art', prices: { usd: '2.40', eur: null },
-    purchase_uris: { tcgplayer: 'https://www.tcgplayer.com/product/2' } },
-  { ...GIMLI, set_name: 'Promo', prices: { usd: null, eur: null } },
+  { ...GIMLI, set: 'ltc', set_name: 'Tales of Middle-earth Commander', collector_number: '115', finishes: ['nonfoil', 'foil'], frame: '2015', border_color: 'black', lang: 'en',
+    prices: { usd: '1.10', usd_foil: '2.00', eur: '0.95' } },
+  { ...GIMLI, set: 'ltc', set_name: 'Tales of Middle-earth Commander', collector_number: '400', finishes: ['nonfoil', 'foil'], frame: '2015', frame_effects: ['extendedart'], border_color: 'black', lang: 'en',
+    prices: { usd: '2.40', usd_foil: '5.00', eur: null }, purchase_uris: { tcgplayer: 'https://www.tcgplayer.com/product/2' } },
+  { ...GIMLI, set: 'pltc', set_name: 'Promo', collector_number: '115p', finishes: ['foil'], prices: { usd: null, eur: null } },
 ];
 
 // 1st Pick: Shopify predictive search. Product titles are "Name [Set]", one product per printing.

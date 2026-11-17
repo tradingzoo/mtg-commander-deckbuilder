@@ -29,6 +29,10 @@ export function installMockFetch() {
 
     if (u.hostname === 'json.edhrec.com') {
       const key = u.pathname.replace(/^\/pages\//, '').replace(/\.json$/, '');
+      if (key === 'top/year') {
+        return json(200, { container: { json_dict: { cardlists: [{ header: 'Past 2 Years',
+          cardviews: ['Gimli of the Glittering Caves', 'Sol Ring', 'Command Tower', 'Arcane Signet', 'Swords to Plowshares', 'Counterspell'].map(name => ({ name })) }] } } });
+      }
       return EDHREC[key] ? json(200, EDHREC[key]) : json(404, { error: 'Not found' });
     }
     // Sealed product lists (card finder's Sealed and Deals pages).

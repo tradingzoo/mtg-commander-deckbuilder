@@ -34,13 +34,18 @@
       <div>
         <p class="eyebrow">Deals · Thailand</p>
         <h1>At or below the US price</h1>
-        <p class="lede">Sealed Magic that a Thai store sells for no more than US MSRP or the TCGplayer market price, converted to baht. Biggest discount first.</p>
+        <p class="lede">Magic that a Thai store sells for no more than the US price (MSRP or TCGplayer market), converted to baht. Biggest discount first.</p>
       </div>
       <form id="filters" class="quick" autocomplete="off" onsubmit="return false">
+        <fieldset class="seg wide" id="what">
+          <legend class="sr">Show deals on</legend>
+          <label><input type="radio" name="what" value="sealed" checked> Sealed</label>
+          <label><input type="radio" name="what" value="singles"> Singles</label>
+        </fieldset>
         <label class="wide">Search
           <input id="q" type="search" placeholder="Commander deck">
         </label>
-        <label>Type
+        <label id="kindBox">Type
           <select id="kind">
             <option value="">Everything</option>
             <option value="box">Booster boxes</option>
@@ -71,7 +76,9 @@
 
   <footer>
     <div class="wrap">
-      <p>Store prices come from each store's public sealed product pages, checked at most once every 3 hours.
+      <p>Singles: the 100 most-played Commander cards on EDHREC, checked at every store at most once every 6 hours. Each near-mint English copy is compared with the
+      TCGplayer price of that same printing and finish (from <a href="https://scryfall.com">Scryfall</a>). Copies where the printing isn't clear are left out.</p>
+      <p>Sealed: store prices come from each store's public sealed product pages, checked at most once every 3 hours.
       Reference prices: US MSRP where listed, otherwise the TCGplayer market price from <a href="https://tcgcsv.com">tcgcsv.com</a> (updated daily),
       converted to baht with <a href="https://www.exchangerate-api.com">ExchangeRate-API</a>'s daily rate. US prices leave out shipping and import costs,
       so a Thai shop at or below them is a genuinely good price. Not affiliated with Wizards of the Coast, TCGplayer or any store.</p>

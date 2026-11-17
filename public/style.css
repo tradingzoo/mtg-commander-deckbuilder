@@ -193,3 +193,11 @@ footer a { color: #dcab4c; }
 .hero .lede a { color: #dcab4c; }
 .offers .tag { display: inline-block; margin-top: .35rem; }
 .offers .price small a { font-weight: 500; }
+
+/* Sealed / Singles switch on the Deals page */
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: .3rem; border: 0; margin: 0; padding: 0; min-width: 0; }
+form.quick .seg label { flex-direction: row; align-items: center; justify-content: center; gap: .4rem; font: 700 .95rem/1 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--ink); padding: .75rem .5rem; cursor: pointer; }
+form.quick .seg input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+form.quick .seg label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
+form.quick .seg label:has(input:checked) { background: var(--accent); color: var(--accent-ink); }
+footer p + p { margin-top: .8rem; }

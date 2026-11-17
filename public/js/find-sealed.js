@@ -1,4 +1,5 @@
-// Sealed and Deals pages of the card finder. One request for the whole catalogue, then filter here.
+// Sealed and Deals pages of the card finder. Sealed: one request for the whole catalogue, then filter here.
+// Singles (Deals page only): the server checks a few cards per request, so we fetch batches and add deals as they arrive.
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const baht = (n) => (n == null ? '' : '฿' + Math.round(Number(n)).toLocaleString('en-US'));
@@ -14,9 +15,9 @@ export function kindGroup(kind) {
   return 'other';
 }
 
-// Every word typed must appear in the title, store, set or type.
+// Every word typed must appear in the title, store, set, type or printing.
 export function matches(o, q) {
-  const hay = `${o.title} ${o.store} ${o.set || ''} ${o.kindLabel}`.toLowerCase();
+  const hay = `${o.title} ${o.store} ${o.set || ''} ${o.kindLabel || ''} ${o.detail || ''}`.toLowerCase();
   return q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w));
 }
 
@@ -40,13 +41,14 @@ function badge(o) {
 }
 
 function offerHtml(o) {
+  const single = !o.kindLabel;
   const ref = o.ref
-    ? `<small>US price: ${o.ref.source === 'msrp' ? 'MSRP' : 'TCGplayer market'} <a href="${esc(safeUrl(o.ref.url))}" target="_blank" rel="noopener">$${o.ref.usd.toFixed(2)}</a>${o.ref.thb ? ` ≈ ${esc(baht(o.ref.thb))}` : ''}</small>`
+    ? `<small>US price: ${o.ref.source === 'msrp' ? 'MSRP' : 'TCGplayer market'} <a href="${esc(safeUrl(o.ref.url))}" target="_blank" rel="noopener">$${o.ref.usd.toFixed(2)}</a>${o.ref.thb ? ` ≈ ${esc(baht(o.ref.thb))}` : ''}${single ? ` · ${esc(o.ref.name)}` : ''}</small>`
     : '<small>No US price found</small>';
   const left = o.qty ? `<small>${esc(o.qty)} left</small>` : '';
   return `<li>
     <div><a href="${esc(safeUrl(o.url))}" target="_blank" rel="noopener">${esc(o.title)}</a>
-      <small>${esc(o.store)}${o.area !== 'Bangkok' ? ` · ${esc(o.area)}` : ''} · ${esc(o.kindLabel)}</small>
+      <small>${esc(o.store)}${o.area && o.area !== 'Bangkok' ? ` · ${esc(o.area)}` : ''} · ${esc(single ? (o.detail || 'Single') : o.kindLabel)}</small>
       ${ref}${badge(o)}</div>
     <div class="price">${esc(baht(o.price))}${left}</div>
   </li>`;
@@ -59,22 +61,37 @@ function storesHtml(stores) {
 
 function start() {
   const MODE = document.body.dataset.mode; // "sealed" or "deals"
-  let data = null;
+  let data = null;      // sealed catalogue
+  let singles = null;   // { offers, done, batches, per, total, fx }
+  const what = () => (MODE === 'deals' && document.querySelector('input[name="what"]:checked')?.value) || 'sealed';
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
   function render() {
-    if (!data) return;
-    const opts = { q: $('#q').value.trim(), kind: $('#kind').value, sort: $('#sort')?.value, within: Number($('#within')?.value || 0), mode: MODE };
-    const list = pick(data.offers, opts);
+    const isSingles = what() === 'singles';
+    if ($('#kindBox')) $('#kindBox').hidden = isSingles;
+    if ($('#storeInfo')) $('#storeInfo').hidden = isSingles;
+    const src = isSingles ? singles : data;
+    if (!src) { $('#offers').innerHTML = ''; return; }
+    const opts = { q: $('#q').value.trim(), kind: isSingles ? '' : $('#kind').value, sort: $('#sort')?.value, within: Number($('#within')?.value || 0), mode: MODE };
+    const list = pick(src.offers, opts);
+    const loading = isSingles && singles.done < singles.batches;
     $('#offers').innerHTML = list.length
       ? `<div class="card"><ul class="listings offers">${list.slice(0, SHOW).map(offerHtml).join('')}</ul></div>`
-      : `<div class="card"><p class="note">${MODE === 'deals' ? 'No sealed product at or below the US price right now' : 'Nothing in stock matches that'}${opts.q || opts.kind ? ' with these filters' : ''}.</p></div>`;
+      : loading ? '' : `<div class="card"><p class="note">${MODE === 'deals' ? `No ${isSingles ? 'singles' : 'sealed product'} at or below the US price right now` : 'Nothing in stock matches that'}${opts.q || opts.kind ? ' with these filters' : ''}.</p></div>`;
     $('#more').hidden = list.length <= SHOW;
     $('#more').textContent = `Showing ${SHOW} of ${list.length}. Search to narrow it down.`;
-    const priced = data.offers.filter(o => o.ref).length;
-    const rate = data.fx.usdToThb ? ` $1 = ฿${data.fx.usdToThb.toFixed(2)}.` : ' No exchange rate right now, so no US comparison.';
-    $('#status').textContent = MODE === 'deals'
-      ? `${list.length} ${list.length === 1 ? 'deal' : 'deals'} out of ${data.offers.length} in stock (${priced} with a US price).${rate}`
-      : `${list.length} of ${data.offers.length} sealed products in stock.${rate}`;
+    const priced = src.offers.filter(o => o.ref).length;
+    const rate = src.fx?.usdToThb ? ` $1 = ฿${src.fx.usdToThb.toFixed(2)}.` : ' No exchange rate right now, so no US comparison.';
+    if (isSingles) {
+      const cards = Math.min(singles.done * singles.per, singles.total || 0);
+      $('#status').textContent = loading
+        ? `Checking the top ${singles.total || 100} Commander cards at 7 stores… ${cards} done, ${plural(list.length, 'deal', 'deals')} so far.`
+        : `${plural(list.length, 'deal', 'deals')} among ${src.offers.length} in-stock copies of the top ${singles.total} Commander cards (${priced} matched to a US printing).${rate}`;
+    } else {
+      $('#status').textContent = MODE === 'deals'
+        ? `${plural(list.length, 'deal', 'deals')} out of ${src.offers.length} in stock (${priced} with a US price).${rate}`
+        : `${list.length} of ${src.offers.length} sealed products in stock.${rate}`;
+    }
   }
 
   async function load() {
@@ -84,19 +101,68 @@ function start() {
       if (!r.ok) throw new Error(d.error || `Request failed (${r.status})`);
       data = d;
       $('#storeList').innerHTML = storesHtml(d.stores);
-      render();
+      if (what() === 'sealed') render();
     } catch (e) {
+      if (what() !== 'sealed') return;
       $('#status').textContent = `${e.message}. Try again in a minute.`;
       $('#status').classList.add('error');
     }
   }
 
+  async function getBatch(n) {
+    for (let tryNo = 0; tryNo < 2; tryNo++) {
+      try {
+        const r = await fetch(`/api/singles?batch=${n}`);
+        if (r.ok) return await r.json();
+      } catch { /* try once more */ }
+    }
+    return null;
+  }
+
+  // Two batches at a time; each one is cached on the server, so a second visit fills in fast.
+  async function loadSingles() {
+    if (singles) return render();
+    singles = { offers: [], done: 0, batches: 1, per: 5, total: 0, fx: null };
+    $('#status').textContent = 'Checking the top Commander cards at 7 stores…';
+    render();
+    const first = await getBatch(0);
+    if (!first) {
+      singles = null;
+      $('#status').textContent = 'Could not check singles right now. Try again in a minute.';
+      $('#status').classList.add('error');
+      return;
+    }
+    Object.assign(singles, { batches: first.batches, per: first.cards.length, total: first.total, fx: first.fx, done: 1 });
+    singles.offers.push(...first.offers);
+    render();
+    let next = 1;
+    await Promise.all([0, 1].map(async () => {
+      while (next < singles.batches) {
+        const b = await getBatch(next++);
+        singles.done++;
+        if (b) singles.offers.push(...b.offers);
+        if (what() === 'singles') render();
+      }
+    }));
+    if (what() === 'singles') render();
+  }
+
   const p = new URLSearchParams(location.search);
   if (p.get('q')) $('#q').value = p.get('q');
+  const singlesRadio = document.querySelector('input[name="what"][value="singles"]');
+  if (p.get('what') === 'singles' && singlesRadio) singlesRadio.checked = true;
   let t;
   $('#filters').addEventListener('input', () => { clearTimeout(t); t = setTimeout(render, 150); });
-  $('#filters').addEventListener('change', render);
+  $('#filters').addEventListener('change', (e) => {
+    $('#status').classList.remove('error');
+    if (e.target.name === 'what') {
+      history.replaceState(null, '', e.target.value === 'singles' ? '?what=singles' : location.pathname);
+      if (e.target.value === 'singles') return loadSingles();
+    }
+    render();
+  });
   load();
+  if (what() === 'singles') loadSingles();
 }
 
 if (typeof document !== 'undefined' && document.querySelector('#filters')) start();
