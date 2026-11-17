@@ -52,7 +52,7 @@ const KINDS = [
   [/draft booster (display|box)/, 'draft-box'],
   [/draft booster/, 'draft-pack'],
   [/draft night/, 'draft-night'],
-  [/gift bundle/, 'gift-bundle'],
+  [/gift bundle|bundle gift edition/, 'gift-bundle'],
   [/\b(bundle|fat pack)\b/, 'bundle'],
   [/prerelease (pack|kit)/, 'prerelease'],
   [/starter kit/, 'starter-kit'],

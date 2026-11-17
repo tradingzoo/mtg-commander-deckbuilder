@@ -33,6 +33,7 @@ test('sealedKind: store and TCGplayer wordings land on the same labels', () => {
   assert.equal(k('Teenage Mutant Ninja Turtles - Pizza Bundle'), 'bundle');
   assert.equal(k('The Hobbit - Gift Bundle -'), 'gift-bundle');
   assert.equal(k('Lorwyn Fat Pack'), 'bundle');
+  assert.equal(k('Innistrad: Crimson Vow Bundle Gift Edition'), 'gift-bundle');
   assert.equal(k('Lorwyn Eclipsed - Prerelease Kit'), 'prerelease');
   assert.equal(k('BOOSTER BOX BATTLE FOR ZENDIKAR'), 'booster-box');
   assert.equal(k('Reality Fracture - Secret Lair Bundle -'), 'secret-lair');
