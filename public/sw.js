@@ -1,6 +1,6 @@
 // Offline shell: the app screen loads without signal; data still needs a connection.
-const CACHE = 'deckbuilder-v5';
-const SHELL = ['/', '/index.html', '/style.css', '/js/app.js', '/js/classify.js', '/js/brackets.js', '/js/combos.js', '/find.html', '/js/find.js', '/manifest.webmanifest', '/icons/icon-192.png'];
+const CACHE = 'deckbuilder-v6';
+const SHELL = ['/', '/index.html', '/style.css', '/js/app.js', '/js/classify.js', '/js/brackets.js', '/js/combos.js', '/find.html', '/js/find.js', '/find-sealed.html', '/find-deals.html', '/js/find-sealed.js', '/find.webmanifest', '/manifest.webmanifest', '/icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

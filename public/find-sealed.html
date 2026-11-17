@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sealed product · Card Finder</title>
+  <meta name="description" content="Booster boxes, packs, bundles and Commander precons in stock at Thai stores, in baht, next to the US price.">
+  <meta name="theme-color" content="#0f1a16">
+  <link rel="manifest" href="/find.webmanifest">
+  <link rel="icon" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body data-mode="sealed">
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="/find.html">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="3" width="17" height="24" rx="3" fill="#c08a2a"/><rect x="10" y="6" width="17" height="24" rx="3" fill="#f2f1ec" stroke="#0f1a16" stroke-width="1.5"/></svg>
+        Card Finder
+      </a>
+      <nav class="ftabs" aria-label="Card finder">
+        <a href="/find.html">Cards</a>
+        <a href="/find-sealed.html" aria-current="page">Sealed</a>
+        <a href="/find-deals.html">Deals</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow">Sealed product · Thailand</p>
+        <h1>Boxes, packs and precons</h1>
+        <p class="lede">Everything sealed that seven Thai stores have in stock, cheapest first, with the US price in baht beside it.</p>
+      </div>
+      <form id="filters" class="quick" autocomplete="off" onsubmit="return false">
+        <label class="wide">Search
+          <input id="q" type="search" placeholder="Final Fantasy collector">
+        </label>
+        <label>Type
+          <select id="kind">
+            <option value="">Everything</option>
+            <option value="box">Booster boxes</option>
+            <option value="pack">Booster packs</option>
+            <option value="commander">Commander decks</option>
+            <option value="bundle">Bundles</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label>Sort
+          <select id="sort">
+            <option value="price">Cheapest</option>
+            <option value="discount">Best vs US price</option>
+            <option value="name">Name</option>
+          </select>
+        </label>
+      </form>
+      <p id="status" class="status" role="status">Loading sealed product from 7 Thai stores…</p>
+    </div>
+  </section>
+
+  <section class="tight">
+    <div class="wrap stack">
+      <div id="offers" class="stack"></div>
+      <p id="more" class="note" hidden></p>
+      <details id="storeInfo" class="card more"><summary>Stores checked</summary><ul id="storeList" class="listings"></ul></details>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p>Store prices come from each store's public sealed product pages, checked at most once every 3 hours.
+      Reference prices: US MSRP where listed, otherwise the TCGplayer market price from <a href="https://tcgcsv.com">tcgcsv.com</a> (updated daily),
+      converted to baht with <a href="https://www.exchangerate-api.com">ExchangeRate-API</a>'s daily rate. US prices leave out shipping and import costs,
+      so a Thai shop at or below them is a genuinely good price. Not affiliated with Wizards of the Coast, TCGplayer or any store.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/find-sealed.js"></script>
+</body>
+</html>

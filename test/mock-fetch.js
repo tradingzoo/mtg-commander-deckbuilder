@@ -1,6 +1,7 @@
 // Replaces global fetch with canned EDHREC/Scryfall answers (for tests and `npm run mock`).
 import { CARDS, EDHREC, COMBOS } from './fixtures.js';
 import { cardKey } from '../public/js/combos.js';
+import { TCG_GROUPS, TCG, POWER9_SEALED, FIRSTPICK_SEALED, FIRSTPICK_DECKS, BIGBEAR_SEALED, NOX_SEALED, LEVELMAX_SEALED, YANNICK_SEALED, SABAI_SEALED } from './sealed-fixtures.js';
 import { GIMLI, GIMLI_PRINTS, FIRSTPICK_SUGGEST, FIRSTPICK_PRODUCT, YANNICK_HTML, YANNICK_SOLD_OUT_HTML, SABAI_HTML, FX, POWER9_SUGGEST, POWER9_PRODUCT, LEVELMAX_HTML, NOX_SINGLES, NOX_FOILS } from './store-fixtures.js';
 
 const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -18,7 +19,7 @@ function findCard(name) {
 
 export const calls = [];
 // Flip these in tests to see how the card finder copes with a store that is down or sold out.
-export const mockStores = { sabaiDown: false, yannickSoldOut: false };
+export const mockStores = { sabaiDown: false, yannickSoldOut: false, tcgDown: false };
 const html = (body) => new Response(body, { status: 200, headers: { 'Content-Type': 'text/html' } });
 
 export function installMockFetch() {
@@ -29,6 +30,31 @@ export function installMockFetch() {
     if (u.hostname === 'json.edhrec.com') {
       const key = u.pathname.replace(/^\/pages\//, '').replace(/\.json$/, '');
       return EDHREC[key] ? json(200, EDHREC[key]) : json(404, { error: 'Not found' });
+    }
+    // Sealed product lists (card finder's Sealed and Deals pages).
+    if (u.hostname === 'tcgcsv.com') {
+      if (mockStores.tcgDown) return new Response('down', { status: 503 });
+      if (u.pathname === '/tcgplayer/1/groups') return json(200, TCG_GROUPS);
+      const g = u.pathname.match(/^\/tcgplayer\/1\/(\d+)\/(products|prices)$/);
+      if (g && TCG[g[1]]) return json(200, TCG[g[1]][g[2]]);
+      return json(404, {});
+    }
+    const coll = u.pathname.match(/^\/collections\/([a-z0-9-]+)\/products\.json$/);
+    if (coll) {
+      const page = Number(u.searchParams.get('page') || 1);
+      const empty = { products: [] };
+      if (page > 1) return json(200, empty);
+      if (u.hostname === 'power9cardstore.com' && coll[1] === 'mtg-sealed') return json(200, POWER9_SEALED);
+      if (u.hostname === 'bigbearcards.com' && coll[1] === 'mtg-sealed') return json(200, BIGBEAR_SEALED);
+      if (u.hostname === '1stpickhs-onlineshop.com' && coll[1] === 'mtg-sealed-product') return json(200, FIRSTPICK_SEALED);
+      if (u.hostname === '1stpickhs-onlineshop.com' && coll[1] === 'mtg-commander-deck') return json(200, FIRSTPICK_DECKS);
+      return json(200, empty);
+    }
+    if (u.hostname === 'noxtcg.com' && u.pathname === '/api/products') return json(200, NOX_SEALED);
+    if (u.hostname === 'www.tomorrowlion.com' && u.pathname === '/sealed') return html(LEVELMAX_SEALED);
+    if (u.hostname === 'yannickthegathering.com' && u.pathname === '/collections/s/mtg-sealed') return html(YANNICK_SEALED);
+    if (u.hostname === 'sabaicards.com' && u.pathname === '/products/sealed') {
+      return mockStores.sabaiDown ? new Response('Forbidden', { status: 403 }) : html(SABAI_SEALED);
     }
     if (u.hostname === '1stpickhs-onlineshop.com') {
       if (u.pathname === '/search/suggest.json') return json(200, FIRSTPICK_SUGGEST);

@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Find a card · Commander Deckbuilder</title>
+  <title>Card Finder · Thailand</title>
   <meta name="description" content="Where to buy a Magic card in Bangkok: stock and baht prices from local stores, plus online prices.">
   <meta name="theme-color" content="#0f1a16">
-  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="manifest" href="/find.webmanifest">
   <link rel="icon" href="/icons/icon-192.png">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,20 +17,24 @@
 <body>
   <header class="top">
     <div class="wrap">
-      <a class="brand" href="/">
+      <a class="brand" href="/find.html">
         <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="3" width="17" height="24" rx="3" fill="#c08a2a"/><rect x="10" y="6" width="17" height="24" rx="3" fill="#f2f1ec" stroke="#0f1a16" stroke-width="1.5"/></svg>
-        Commander Deckbuilder
+        Card Finder
       </a>
-      <a class="hdr-pill" href="/">Deck averages</a>
+      <nav class="ftabs" aria-label="Card finder">
+        <a href="/find.html" aria-current="page">Cards</a>
+        <a href="/find-sealed.html">Sealed</a>
+        <a href="/find-deals.html">Deals</a>
+      </nav>
     </div>
   </header>
 
   <section class="hero">
     <div class="wrap">
       <div>
-        <p class="eyebrow">Card finder · Bangkok</p>
+        <p class="eyebrow">Card finder · Thailand</p>
         <h1>Where to buy a card</h1>
-        <p class="lede">Checks stock and baht prices at six Bangkok shops and Nox TCG in Chiang Mai, then shows online prices to compare.</p>
+        <p class="lede">Checks stock and baht prices at six Bangkok shops and Nox TCG in Chiang Mai, then shows online prices to compare. Looking for boxes or precons? Try <a href="/find-sealed.html">Sealed</a> or today's <a href="/find-deals.html">Deals</a>.</p>
       </div>
       <form id="find" class="quick" autocomplete="off">
         <label class="wide">Card
