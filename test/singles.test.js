@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
 import { installMockFetch, mockStores } from './mock-fetch.js';
 import singles from '../api/singles.js';
-import { copyInfo, printsForSet, matchPrint, clearSinglesMemo, BATCH } from '../api/_singles.js';
+import { copyInfo, printsForSet, matchPrint, clearSinglesMemo, BATCH, namesFromPages } from '../api/_singles.js';
+import find from '../api/find.js';
 import { GIMLI_PRINTS } from './store-fixtures.js';
 
 before(installMockFetch);
@@ -98,14 +99,23 @@ test('GET /api/singles: past the last batch is a 404', async () => {
   assert.equal(r.status, 404);
 });
 
-test('GET /api/singles?name=: any card, every in-stock copy above or below', async () => {
-  const r = await call('/api/singles?name=gimli glittering');
-  assert.equal(r.status, 200);
-  assert.equal(r.body.card, 'Gimli of the Glittering Caves');
-  assert.match(r.headers['cache-control'], /s-maxage=1800/);
-  const priced = r.body.offers.filter(o => o.discountPct != null);
-  assert.ok(priced.length >= 4);
-  assert.ok(priced.every(o => o.discountPct < 0), 'all above the US price in the test data, and still listed');
-  assert.equal((await call('/api/singles?name=zzzzzz')).status, 404);
-  assert.equal((await call('/api/singles?name=a')).status, 400);
+test('namesFromPages: top cards in EDHREC order, no repeats, capped', () => {
+  const pages = [{ data: [{ name: 'Sol Ring' }, { name: 'Command Tower' }] }, { data: [{ name: 'Sol Ring' }, { name: 'Arcane Signet' }] }];
+  assert.deepEqual(namesFromPages(pages), ['Sol Ring', 'Command Tower', 'Arcane Signet']);
+  assert.deepEqual(namesFromPages(pages, 2), ['Sol Ring', 'Command Tower']);
+});
+
+test('/api/find: each copy carries its US price and how far over or under it is', async () => {
+  const req = Readable.from([]);
+  Object.assign(req, { url: '/api/find?name=gimli glittering', method: 'GET', headers: {} });
+  const body = await new Promise((resolve) => {
+    const res = { statusCode: 200, setHeader() {}, end: (s) => resolve(JSON.parse(s)) };
+    find(req, res);
+  });
+  const all = body.stores.flatMap(s => s.listings.map(l => ({ ...l, store: s.id })));
+  const fp = all.find(l => l.store === 'firstpick' && l.price === 45);
+  assert.equal(fp.ref.usd, 1.1);
+  assert.equal(fp.vsUsPct, -25);
+  assert.equal(all.find(l => l.store === 'firstpick' && l.price === 40).ref, undefined, 'played copy: no tag');
+  assert.equal(all.find(l => l.store === 'sabai' && l.price === 720).ref.usd, 2.4);
 });

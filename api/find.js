@@ -2,6 +2,7 @@
 // Where to buy one card: Bangkok stores first (baht, stock), then online reference prices from Scryfall.
 import { send, query, getJson } from './_lib.js';
 import { STORES, checkStore } from './_stores.js';
+import { matchPrint } from './_singles.js';
 
 const CACHE_SECONDS = 60 * 30; // store stock moves; half an hour keeps us polite without going stale
 
@@ -53,6 +54,18 @@ export default async function handler(req, res) {
     printsP,
     fxRates(),
   ]);
+
+  // Each copy against the US price of its own printing and finish, when we can tell which printing it is.
+  for (const s of stores) {
+    for (const l of s.listings) {
+      const m = matchPrint(l, prints);
+      if (!m) continue;
+      const thb = fx.usdToThb ? Math.round(m.usd * fx.usdToThb) : null;
+      l.ref = { usd: m.usd, thb, name: `${m.print.set_name} #${m.print.collector_number}${m.foil !== 'nonfoil' ? ` (${m.foil})` : ''}`,
+        url: m.print.purchase_uris?.tcgplayer || m.print.scryfall_uri };
+      l.vsUsPct = thb && l.price ? Math.round(((thb - l.price) / thb) * 1000) / 10 : null;
+    }
+  }
 
   const img = card.image_uris || card.card_faces?.[0]?.image_uris || {};
   send(res, 200, {

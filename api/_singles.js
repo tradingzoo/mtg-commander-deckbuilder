@@ -1,4 +1,4 @@
-// Singles deals: for the most-played Commander cards (EDHREC, past 2 years), check every Thai store and
+// Singles deals: for the 500 most-played Commander cards (EDHREC rank via Scryfall), check every Thai store and
 // compare each in-stock copy with the US price of that exact printing and finish (Scryfall's daily
 // TCGplayer price). A copy is left out when we can't tell which printing it is.
 import { getJson } from './_lib.js';
@@ -17,8 +17,25 @@ async function cached(key, ms, fn) {
 }
 export const clearSinglesMemo = () => memo.clear();
 
-// The 100 most-played Commander cards, in EDHREC's order.
+export const TOP_N = 500;
+
+// The 500 most-played Commander cards: Scryfall's search sorted by EDHREC rank (175 a page, basics left out).
+// If Scryfall is down, EDHREC's own top 100 list instead.
+export function namesFromPages(pages, n = TOP_N) {
+  return [...new Set(pages.flatMap(p => (p?.data || []).map(c => c.name)))].slice(0, n);
+}
+
 export const topCards = () => cached('top', 24 * 3600 * 1000, async () => {
+  const pages = [];
+  let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent('f:commander game:paper -t:basic')}&order=edhrec`;
+  for (let i = 0; url && i < Math.ceil(TOP_N / 175); i++) {
+    const r = await getJson(url).catch(() => null);
+    if (!r?.ok) break;
+    pages.push(r.body);
+    url = r.body?.has_more ? r.body.next_page : null;
+  }
+  const names = namesFromPages(pages);
+  if (names.length >= 100) return names;
   const r = await getJson('https://json.edhrec.com/pages/top/year.json');
   if (!r.ok) throw new Error('EDHREC did not respond');
   const lists = r.body?.container?.json_dict?.cardlists || [];

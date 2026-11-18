@@ -23,6 +23,17 @@ $('#card').addEventListener('input', (e) => {
   }, 250);
 });
 
+// "12% under US" / "8% over US": this copy against the TCGplayer price of the same printing and finish.
+function usTag(l) {
+  if (!l.ref) return '';
+  const us = `US $${l.ref.usd.toFixed(2)}${l.ref.thb ? ` ≈ ${baht(l.ref.thb)}` : ''}`;
+  if (l.vsUsPct == null) return `<small>${esc(us)}</small>`;
+  const pct = Math.abs(l.vsUsPct).toFixed(l.vsUsPct % 1 ? 1 : 0);
+  const tag = l.vsUsPct > 0 ? `<span class="tag in">${pct}% under US</span>`
+    : l.vsUsPct === 0 ? '<span class="tag in">At US price</span>' : `<span class="tag out">${pct}% over US</span>`;
+  return `<small><a href="${esc(safeUrl(l.ref.url))}" target="_blank" rel="noopener" title="${esc(l.ref.name)}">${esc(us)}</a></small>${tag}`;
+}
+
 function storeHtml(s) {
   const tag = !s.ok ? '<span class="tag err">Couldn\'t check</span>'
     : s.inStock ? `<span class="tag in">In stock · from ${esc(baht(s.cheapest))}</span>`
@@ -30,7 +41,7 @@ function storeHtml(s) {
   const rows = s.listings.slice(0, 8).map(l => `
     <li class="${l.inStock ? '' : 'sold'}">
       <div><a href="${esc(safeUrl(l.url))}" target="_blank" rel="noopener">${esc(l.name)}</a>
-        <small>${esc([l.set, l.finish].filter(Boolean).join(' · '))}</small></div>
+        <small>${esc([l.set, l.finish].filter(Boolean).join(' · '))}</small>${usTag(l)}</div>
       <div class="price">${l.price != null ? esc(baht(l.price)) : '–'}
         <small>${l.inStock ? (l.qty ? `${esc(l.qty)} left` : 'in stock') : 'sold out'}</small></div>
     </li>`).join('');

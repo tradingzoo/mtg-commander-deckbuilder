@@ -201,3 +201,5 @@ form.quick .seg input { position: absolute; opacity: 0; width: 1px; height: 1px;
 form.quick .seg label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
 form.quick .seg label:has(input:checked) { background: var(--accent); color: var(--accent-ink); }
 footer p + p { margin-top: .8rem; }
+.store .listings .tag { display: inline-block; margin-top: .3rem; }
+.store .listings small a { font-weight: 500; }
