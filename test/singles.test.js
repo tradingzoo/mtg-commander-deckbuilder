@@ -57,6 +57,12 @@ test('matchPrint: the exact printing and finish, or nothing when unsure', () => 
   assert.equal(m({ set: 'Commander Masters' }), null, 'unknown set');
   assert.equal(m({ name: 'Gimli of the Glittering Caves (Borderless)', set: 'LTC' }), null, 'no borderless printing');
   assert.equal(m({ name: 'Sol Ring (Foil Etched)', set: 'LTC' }), null, 'no etched finish');
+  // An old-frame set with one printing (Prophecy Rhystic Study) still matches without the listing saying "retro".
+  const pcy = { set: 'pcy', set_name: 'Prophecy', collector_number: '45', finishes: ['nonfoil', 'foil'], frame: '1997', border_color: 'black', lang: 'en', prices: { usd: '61.83', usd_foil: '456.91' } };
+  assert.equal(matchPrint(L({ name: 'Rhystic Study', set: 'Prophecy', finish: 'Near Mint' }), [pcy]).usd, 61.83);
+  // Every printing in the set has a treatment and the listing names none (Enchanting Tales): too unclear, skip.
+  const wot = (n, fx, usd) => ({ set: 'wot', set_name: 'Wilds of Eldraine: Enchanting Tales', collector_number: n, finishes: ['nonfoil', 'foil'], frame: '2015', border_color: 'borderless', frame_effects: fx, lang: 'en', prices: { usd } });
+  assert.equal(matchPrint(L({ name: 'Rhystic Study', set: 'Wilds of Eldraine: Enchanting Tales' }), [wot('25', ['showcase'], '81.62'), wot('71', [], '152.39')]), null);
   // Two printings at very different prices and nothing to tell them apart: skip.
   const twins = [GIMLI_PRINTS[0], { ...GIMLI_PRINTS[0], collector_number: '999', prices: { usd: '9.00' } }];
   assert.equal(matchPrint(L({ set: 'LTC' }), twins), null);

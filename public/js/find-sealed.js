@@ -213,7 +213,7 @@ function start() {
   });
   load();
   if (what() === 'singles') { singlesDefault(); loadSingles(); }
-  if (what() === 'singles' && p.get('card')) checkCard(p.get('card'));
+  if (what() === 'singles' && p.get('card')) { $('#q').value = p.get('card'); checkCard(p.get('card')); }
 }
 
 if (typeof document !== 'undefined' && document.querySelector('#filters')) start();

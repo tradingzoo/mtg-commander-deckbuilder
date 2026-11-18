@@ -83,8 +83,18 @@ export function matchPrint(listing, prints) {
   const byNumber = c.fromUrl.length ? prints.filter(p => p.set === c.fromUrl[1] && p.collector_number === c.fromUrl[0]) : [];
   cands = byNumber.length ? byNumber : printsForSet(listing.set, prints);
   cands = cands.filter(p => (p.lang || 'en') === 'en' && (p.finishes || []).includes(c.foil) && priceOf(p, c.foil) != null);
-  // Otherwise the treatment named on the listing must match; a listing that names none means the plain version.
-  if (!byNumber.length) cands = cands.filter(p => { const t = treatsOf(p); return Object.keys(c.treat).every(k => t[k] === c.treat[k]); });
+  // A treatment named on the listing must match; a listing that names none means the plain version.
+  if (!byNumber.length) {
+    const named = Object.keys(c.treat).filter(k => c.treat[k]);
+    if (named.length) {
+      // "(Extended Art)" etc. on the listing: only printings with that treatment.
+      cands = cands.filter(p => { const t = treatsOf(p); return named.every(k => t[k]); });
+    } else if (cands.length > 1) {
+      // Nothing named: the plain printing if there is one. Old frames (Prophecy) count as plain when that's all there is.
+      const plain = cands.filter(p => { const t = treatsOf(p); return !Object.values(t).some(Boolean); });
+      if (plain.length) cands = plain;
+    }
+  }
   if (!cands.length) return null;
   const usds = cands.map(p => priceOf(p, c.foil));
   const lo = Math.min(...usds), hi = Math.max(...usds);
