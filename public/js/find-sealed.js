@@ -66,10 +66,46 @@ function start() {
   const what = () => (MODE === 'deals' && document.querySelector('input[name="what"]:checked')?.value) || 'sealed';
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
+  let lookup = null;    // one card the person typed: { card, offers, fx } or { loading } or { error }
+
+  // Any card: every in-stock copy, cheapest compared with its US price first, above or below.
+  function renderLookup() {
+    if (lookup.loading) { $('#offers').innerHTML = ''; $('#status').textContent = `Checking ${lookup.loading} at 7 stores…`; return; }
+    if (lookup.error) { $('#offers').innerHTML = ''; $('#status').textContent = lookup.error; $('#status').classList.add('error'); return; }
+    const list = pick(lookup.offers, { sort: 'discount' });
+    const below = list.filter(o => o.discountPct != null && o.discountPct >= 0).length;
+    const above = list.filter(o => o.discountPct != null && o.discountPct < 0).length;
+    $('#offers').innerHTML = list.length
+      ? `<div class="card"><ul class="listings offers">${list.map(offerHtml).join('')}</ul></div>`
+      : '<div class="card"><p class="note">Not in stock at any Thai store right now.</p></div>';
+    $('#more').hidden = true;
+    const rate = lookup.fx?.usdToThb ? ` $1 = ฿${lookup.fx.usdToThb.toFixed(2)}.` : '';
+    $('#status').textContent = `${lookup.card}: ${plural(list.length, 'copy', 'copies')} in stock, ${below} at or below the US price, ${above} above${list.length - below - above ? `, ${list.length - below - above} with no clear US printing` : ''}.${rate} Clear the search to go back to the top 100.`;
+  }
+
+  async function checkCard(name) {
+    lookup = { loading: name };
+    $('#status').classList.remove('error');
+    render();
+    try {
+      const r = await fetch(`/api/singles?name=${encodeURIComponent(name)}`);
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || `Request failed (${r.status})`);
+      lookup = d;
+      $('#q').value = d.card;
+    } catch (e) {
+      lookup = { error: e.message };
+    }
+    if (what() === 'singles') render();
+  }
+
   function render() {
     const isSingles = what() === 'singles';
     if ($('#kindBox')) $('#kindBox').hidden = isSingles;
     if ($('#storeInfo')) $('#storeInfo').hidden = isSingles;
+    if ($('#checkCard')) $('#checkCard').hidden = !isSingles;
+    if (MODE === 'deals') $('#q').placeholder = isSingles ? 'Any card, e.g. Rhystic Study' : 'Commander deck';
+    if (isSingles && lookup) return renderLookup();
     const src = isSingles ? singles : data;
     if (!src) { $('#offers').innerHTML = ''; return; }
     const opts = { q: $('#q').value.trim(), kind: isSingles ? '' : $('#kind').value, sort: $('#sort')?.value, within: Number($('#within')?.value || 0), mode: MODE };
@@ -84,9 +120,10 @@ function start() {
     const rate = src.fx?.usdToThb ? ` $1 = ฿${src.fx.usdToThb.toFixed(2)}.` : ' No exchange rate right now, so no US comparison.';
     if (isSingles) {
       const cards = Math.min(singles.done * singles.per, singles.total || 0);
+      const found = opts.within >= 1000 ? plural(list.length, 'copy', 'copies') + ' with a US price' : plural(list.length, 'deal', 'deals');
       $('#status').textContent = loading
-        ? `Checking the top ${singles.total || 100} Commander cards at 7 stores… ${cards} done, ${plural(list.length, 'deal', 'deals')} so far.`
-        : `${plural(list.length, 'deal', 'deals')} among ${src.offers.length} in-stock copies of the top ${singles.total} Commander cards (${priced} matched to a US printing).${rate}`;
+        ? `Checking the top ${singles.total || 100} Commander cards at 7 stores… ${cards} done, ${found} so far. Or type any card and tap Check.`
+        : `${found} among ${src.offers.length} in-stock copies of the top ${singles.total} Commander cards.${rate} Type any card and tap Check for the rest.`;
     } else {
       $('#status').textContent = MODE === 'deals'
         ? `${plural(list.length, 'deal', 'deals')} out of ${src.offers.length} in stock (${priced} with a US price).${rate}`
@@ -152,17 +189,31 @@ function start() {
   const singlesRadio = document.querySelector('input[name="what"][value="singles"]');
   if (p.get('what') === 'singles' && singlesRadio) singlesRadio.checked = true;
   let t;
-  $('#filters').addEventListener('input', () => { clearTimeout(t); t = setTimeout(render, 150); });
+  $('#filters').addEventListener('input', (e) => {
+    // Editing the search after checking a card goes back to the top-100 list, filtered by what's typed.
+    if (e.target.id === 'q' && lookup && !lookup.loading && e.target.value.trim() !== lookup.card) { lookup = null; $('#status').classList.remove('error'); }
+    clearTimeout(t); t = setTimeout(render, 150);
+  });
+  $('#filters').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('#q').value.trim();
+    if (what() === 'singles' && name.length >= 2) checkCard(name);
+  });
+  // Singles show every copy, above or below the US price, unless the person picks otherwise.
+  let pickedShow = false;
+  const singlesDefault = () => { if (!pickedShow && $('#within')) $('#within').value = '1000'; };
   $('#filters').addEventListener('change', (e) => {
     $('#status').classList.remove('error');
+    if (e.target.id === 'within') pickedShow = true;
     if (e.target.name === 'what') {
       history.replaceState(null, '', e.target.value === 'singles' ? '?what=singles' : location.pathname);
-      if (e.target.value === 'singles') return loadSingles();
+      if (e.target.value === 'singles') { singlesDefault(); return loadSingles(); }
     }
     render();
   });
   load();
-  if (what() === 'singles') loadSingles();
+  if (what() === 'singles') { singlesDefault(); loadSingles(); }
+  if (what() === 'singles' && p.get('card')) checkCard(p.get('card'));
 }
 
 if (typeof document !== 'undefined' && document.querySelector('#filters')) start();

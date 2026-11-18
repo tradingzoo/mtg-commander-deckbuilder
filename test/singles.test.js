@@ -91,3 +91,15 @@ test('GET /api/singles: past the last batch is a 404', async () => {
   const r = await call('/api/singles?batch=99');
   assert.equal(r.status, 404);
 });
+
+test('GET /api/singles?name=: any card, every in-stock copy above or below', async () => {
+  const r = await call('/api/singles?name=gimli glittering');
+  assert.equal(r.status, 200);
+  assert.equal(r.body.card, 'Gimli of the Glittering Caves');
+  assert.match(r.headers['cache-control'], /s-maxage=1800/);
+  const priced = r.body.offers.filter(o => o.discountPct != null);
+  assert.ok(priced.length >= 4);
+  assert.ok(priced.every(o => o.discountPct < 0), 'all above the US price in the test data, and still listed');
+  assert.equal((await call('/api/singles?name=zzzzzz')).status, 404);
+  assert.equal((await call('/api/singles?name=a')).status, 400);
+});

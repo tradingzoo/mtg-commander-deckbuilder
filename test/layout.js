@@ -65,10 +65,16 @@ try {
         if (w === 390 || w === 800) await p.screenshot({ path: `${out}${pg}-${tag}.png`, fullPage: true });
       }
       await p.click('input[name="what"][value="singles"]');
-      await p.waitForFunction(() => /deals? among/.test(document.querySelector('#status').textContent), null, { timeout: 15000 });
+      await p.waitForFunction(() => / among /.test(document.querySelector('#status').textContent), null, { timeout: 15000 });
       const gsp = await spill(p, w);
       if (gsp.length) fails.push(`${tag} singles deals spill: ${gsp.join(', ')}`);
       if (w === 390 || w === 800) await p.screenshot({ path: `${out}find-singles-${tag}.png`, fullPage: true });
+      await p.fill('#q', 'Gimli of the Glittering Caves');
+      await p.click('#checkCard');
+      await p.waitForFunction(() => /copies in stock/.test(document.querySelector('#status').textContent), null, { timeout: 10000 });
+      const csp = await spill(p, w);
+      if (csp.length) fails.push(`${tag} any-card check spills: ${csp.join(', ')}`);
+      if (w === 390 || w === 800) await p.screenshot({ path: `${out}find-anycard-${tag}.png`, fullPage: true });
     } catch (e) {
       fails.push(`${tag}: ${e.message.split('\n')[0]}`);
     }
