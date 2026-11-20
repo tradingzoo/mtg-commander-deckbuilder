@@ -1,0 +1,17 @@
+{
+  "id": "/tracker.html",
+  "name": "Commander Game Tracker",
+  "short_name": "Game Tracker",
+  "description": "Life, commander damage, poison, commander tax and turns for a Commander pod, plus a log of every game.",
+  "start_url": "/tracker.html",
+  "scope": "/tracker",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1a16",
+  "theme_color": "#0f1a16",
+  "icons": [
+    { "src": "/icons/tracker-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/tracker-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/tracker-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
