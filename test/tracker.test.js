@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  newGame, sources, changeLife, changePoison, changeCmd, changeCasts, setConceded, nextTurn,
-  finishGame, stats, tax, maxCmd, lethalReason, parseBackup, mergeGames, clock, aliveCount,
+  newGame, sources, changeLife, changeCmd, setConceded,
+  finishGame, stats, maxCmd, lethalReason, parseBackup, mergeGames, clock, aliveCount,
 } from '../public/js/tracker-core.js';
 
 const pod = (extra = {}) => newGame({
@@ -12,33 +12,26 @@ const pod = (extra = {}) => newGame({
     { name: 'Max', cmdrs: ['Tymna the Weaver', 'Kraum, Ludevic\'s Opus'] },
     { name: '', cmdrs: [] },
   ],
-  startLife: 40, first: 0, ...extra,
+  startLife: 40, ...extra,
 }, 1_000_000);
 
-test('new game: 40 life, names filled in, first player set', () => {
+test('new game: 40 life, names filled in, no turn tracking', () => {
   const g = pod();
   assert.equal(g.players.length, 4);
-  assert.ok(g.players.every(p => p.life === 40 && p.poison === 0));
+  assert.ok(g.players.every(p => p.life === 40 && Object.keys(p.cmd).length === 0));
   assert.equal(g.players[3].name, 'Player 4');
-  assert.equal(g.active, 0);
-  assert.equal(g.round, 1);
   assert.equal(g.cmdTakesLife, true);
   assert.equal(g.faceTable, true);
-});
-
-test('new game: random first seat uses the random source', () => {
-  const g = pod({ first: 'random' });
-  const g2 = newGame({ players: [{ name: 'a' }, { name: 'b' }, { name: 'c' }], first: 'random' }, 0, () => 0.99);
-  assert.ok(g.first >= 0 && g.first < 4);
-  assert.equal(g2.first, 2);
-  assert.equal(g2.active, 2);
+  assert.equal('round' in g, false);
+  assert.equal('poison' in g.players[0], false);
 });
 
 test('new game: needs two players, caps at six, bad life falls back to 40', () => {
   assert.throws(() => newGame({ players: [{ name: 'solo' }] }));
-  const g = newGame({ players: Array.from({ length: 8 }, (_, i) => ({ name: 'p' + i })), startLife: 'x', first: 0 });
+  const g = newGame({ players: Array.from({ length: 8 }, (_, i) => ({ name: 'p' + i })), startLife: 'x' });
   assert.equal(g.players.length, 6);
   assert.equal(g.startLife, 40);
+  assert.equal(newGame({ players: [{}, {}], startLife: 20 }).players[0].life, 20);
 });
 
 test('sources: partners give two commander damage sources, no commander still gives one', () => {
@@ -56,17 +49,7 @@ test('life at 0 puts a player out, healing brings them back', () => {
   assert.equal(aliveCount(g), 3);
   changeLife(g, 1, 3);
   assert.equal(g.players[1].out, false);
-  assert.equal(g.players[1].outRound, null);
-});
-
-test('10 poison is lethal, poison never goes below 0', () => {
-  const g = pod();
-  changePoison(g, 0, -2);
-  assert.equal(g.players[0].poison, 0);
-  changePoison(g, 0, 9);
-  assert.equal(g.players[0].out, false);
-  changePoison(g, 0, 1);
-  assert.equal(g.players[0].outWhy, 'Poison');
+  assert.equal(g.players[1].outWhy, null);
 });
 
 test('commander damage also takes life, and 21 from one commander is lethal', () => {
@@ -83,50 +66,34 @@ test('commander damage also takes life, and 21 from one commander is lethal', ()
   assert.equal(g.players[1].outWhy, 'Commander damage');
 });
 
-test('21 split across partner commanders is not lethal', () => {
+test('21 split across partner commanders is not lethal; life link can be turned off', () => {
   const g = pod({ cmdTakesLife: false });
   changeCmd(g, 0, 'p2:0', 11);
   changeCmd(g, 0, 'p2:1', 10);
   assert.equal(g.players[0].out, false);
-  assert.equal(g.players[0].life, 40); // table turned off the life link
+  assert.equal(g.players[0].life, 40);
   assert.equal(maxCmd(g.players[0]), 11);
 });
 
-test('commander tax is 2 per earlier cast, per commander', () => {
+test('conceding puts a player out and can be undone', () => {
   const g = pod();
-  changeCasts(g, 2, 0, 1);
-  changeCasts(g, 2, 0, 1);
-  changeCasts(g, 2, 1, 1);
-  changeCasts(g, 2, 1, -5);
-  assert.equal(tax(g.players[2], 0), 4);
-  assert.equal(tax(g.players[2], 1), 0);
-});
-
-test('next turn goes round the table and counts rounds from the first seat', () => {
-  const g = pod({ first: 2 });
-  const seen = [];
-  for (let i = 0; i < 5; i++) { nextTurn(g); seen.push([g.active, g.round]); }
-  assert.deepEqual(seen, [[3, 1], [0, 1], [1, 1], [2, 2], [3, 2]]);
-});
-
-test('next turn skips players who are out, even the first seat', () => {
-  const g = pod({ first: 0 });
-  changeLife(g, 1, -40);
   setConceded(g, 0, true);
-  assert.equal(g.active, 2); // the out first player passed straight on
-  nextTurn(g); assert.deepEqual([g.active, g.round], [3, 1]);
-  nextTurn(g); assert.deepEqual([g.active, g.round], [2, 2]);
   assert.equal(lethalReason(g.players[0]), 'Conceded');
+  assert.equal(g.players[0].out, true);
+  setConceded(g, 0, false);
+  assert.equal(g.players[0].out, false);
+  assert.equal(g.events.length, 2);
 });
 
-test('finish game: record keeps the winner, rounds, time and how', () => {
+test('finish game: record keeps the winner, time and how', () => {
   const g = pod();
-  nextTurn(g); nextTurn(g); nextTurn(g); nextTurn(g); nextTurn(g);
+  changeLife(g, 3, -40);
   const r = finishGame(g, { winner: 0, how: 'Commander damage' }, 1_000_000 + 47 * 60000);
-  assert.equal(r.rounds, 2);
   assert.equal(r.minutes, 47);
   assert.equal(r.winner, 0);
+  assert.equal(r.how, 'Commander damage');
   assert.equal(r.players[0].cmdrs[0], 'Dáin of the Ancient Halls');
+  assert.equal(r.players[3].out, true);
   assert.equal(finishGame(g, { winner: 9 }).winner, null);
 });
 

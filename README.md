@@ -23,7 +23,7 @@ npm run test:layout  # layout bot: phones 320-412 px, tablet, landscape (needs P
 
 ## Game tracker (`/tracker.html`)
 
-A separate installable app for playing Commander: life, commander damage per opponent's commander (partners count separately), poison, commander tax, whose turn it is and the round, undo, and a game log with win rates per player and per commander. It has its own icon and manifest (`tracker.webmanifest`), works offline and keeps the screen on where the phone allows it. Games are saved on the phone (localStorage); **Back up games** in the log saves them to a file. Logic is in `public/js/tracker-core.js` (tested in `test/tracker.test.js`), the page in `public/js/tracker.js` and `public/tracker.css`.
+A separate installable app for playing Commander: life totals and commander damage per opponent's commander (partners count separately), undo, a game clock, and a game log with win rates per player and per commander. It has its own icon and manifest (`tracker.webmanifest`), works offline and keeps the screen on where the phone allows it. Games are saved on the phone (localStorage); **Back up games** in the log saves them to a file. Logic is in `public/js/tracker-core.js` (tested in `test/tracker.test.js`), the page in `public/js/tracker.js` and `public/tracker.css`.
 
 ## How it works
 

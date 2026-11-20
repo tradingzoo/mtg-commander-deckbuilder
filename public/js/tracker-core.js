@@ -1,16 +1,14 @@
 // Game tracker rules, kept free of the page so `npm test` can check them.
-// A game is a plain object (saved as JSON): players with life, poison, commander damage taken
-// and commander casts, plus the round, whose turn it is and an event list.
+// A game is a plain object (saved as JSON): players with life and commander damage taken, plus an event list.
 
-export const POISON_LETHAL = 10;
 export const CMD_LETHAL = 21;
-export const HOW_WON = ['Combat', 'Commander damage', 'Combo', 'Poison', 'Alt win', 'Last one standing', 'Other'];
+export const HOW_WON = ['Combat', 'Commander damage', 'Combo', 'Alt win', 'Last one standing', 'Other'];
 
 const clean = (s, max = 60) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
-// setup: { players: [{ name, cmdrs: [a, b?] }], startLife, first: index | 'random', faceTable, cmdTakesLife }
-export function newGame(setup, now = Date.now(), rand = Math.random) {
+// setup: { players: [{ name, cmdrs: [a, b?] }], startLife, faceTable, cmdTakesLife }
+export function newGame(setup, now = Date.now()) {
   const list = (setup.players || []).slice(0, 6);
   if (list.length < 2) throw new Error('A game needs at least 2 players');
   const startLife = Number(setup.startLife) > 0 ? Math.round(Number(setup.startLife)) : 40;
@@ -18,18 +16,13 @@ export function newGame(setup, now = Date.now(), rand = Math.random) {
     id: 'p' + i,
     name: clean(p.name, 24) || `Player ${i + 1}`,
     cmdrs: (p.cmdrs || []).map(c => clean(c)).filter(Boolean).slice(0, 2),
-    life: startLife, poison: 0, cmd: {}, casts: [0, 0],
-    conceded: false, out: false, outRound: null, outWhy: null,
+    life: startLife, cmd: {},
+    conceded: false, out: false, outWhy: null,
   }));
-  let first = setup.first;
-  if (first === 'random' || !(Number.isInteger(first) && first >= 0 && first < players.length)) {
-    first = Math.floor(rand() * players.length);
-  }
   return {
     id: uid(), startedAt: now, startLife,
     faceTable: setup.faceTable !== false, cmdTakesLife: setup.cmdTakesLife !== false,
-    players, first, active: first, round: 1,
-    events: [{ at: now, round: 1, text: `${players[first].name} goes first` }],
+    players, events: [],
   };
 }
 
@@ -46,13 +39,11 @@ export function sources(g) {
 export function lethalReason(p) {
   if (p.conceded) return 'Conceded';
   if (p.life <= 0) return 'Life';
-  if (p.poison >= POISON_LETHAL) return 'Poison';
   if (Object.values(p.cmd).some(n => n >= CMD_LETHAL)) return 'Commander damage';
   return null;
 }
 
 export const isAlive = p => !p.out;
-export const tax = (p, ci = 0) => 2 * (p.casts[ci] || 0);
 export const maxCmd = p => Math.max(0, ...Object.values(p.cmd));
 
 // Re-works who is out after any change. A player who comes back (an undo-like fix) loses the mark.
@@ -60,37 +51,18 @@ function settle(g, now) {
   for (const p of g.players) {
     const why = lethalReason(p);
     if (why && !p.out) {
-      p.out = true; p.outRound = g.round; p.outWhy = why;
-      g.events.push({ at: now, round: g.round, text: `${p.name} is out (${why.toLowerCase()})` });
+      p.out = true; p.outWhy = why;
+      g.events.push({ at: now, text: `${p.name} is out (${why.toLowerCase()})` });
     } else if (!why && p.out) {
-      p.out = false; p.outRound = null; p.outWhy = null;
-      g.events.push({ at: now, round: g.round, text: `${p.name} is back in` });
+      p.out = false; p.outWhy = null;
+      g.events.push({ at: now, text: `${p.name} is back in` });
     }
-  }
-  if (!isAlive(g.players[g.active])) {
-    const next = nextAlive(g, g.active);
-    if (next !== null) g.active = next;
   }
   return g;
 }
 
-function nextAlive(g, from) {
-  const n = g.players.length;
-  for (let k = 1; k <= n; k++) {
-    const i = (from + k) % n;
-    if (isAlive(g.players[i])) return i;
-  }
-  return null;
-}
-
 export function changeLife(g, pi, delta, now = Date.now()) {
   g.players[pi].life += delta;
-  return settle(g, now);
-}
-
-export function changePoison(g, pi, delta, now = Date.now()) {
-  const p = g.players[pi];
-  p.poison = Math.max(0, p.poison + delta);
   return settle(g, now);
 }
 
@@ -104,26 +76,9 @@ export function changeCmd(g, pi, key, delta, now = Date.now()) {
   return settle(g, now);
 }
 
-export function changeCasts(g, pi, ci, delta) {
-  const p = g.players[pi];
-  p.casts[ci] = Math.max(0, (p.casts[ci] || 0) + delta);
-  return g;
-}
-
 export function setConceded(g, pi, on, now = Date.now()) {
   g.players[pi].conceded = !!on;
   return settle(g, now);
-}
-
-// Passes the turn to the next player still in. The round goes up each time play passes the first seat.
-export function nextTurn(g, now = Date.now()) {
-  const n = g.players.length;
-  for (let k = 1; k <= n; k++) {
-    const i = (g.active + k) % n;
-    if (i === g.first) g.round++;
-    if (isAlive(g.players[i])) { g.active = i; break; }
-  }
-  return g;
 }
 
 export const aliveCount = g => g.players.filter(isAlive).length;
@@ -136,14 +91,11 @@ export function finishGame(g, { winner = null, how = '' } = {}, now = Date.now()
     id: g.id,
     date: new Date(g.startedAt).toISOString(),
     minutes: Math.max(0, Math.round((now - g.startedAt) / 60000)),
-    rounds: g.round,
     startLife: g.startLife,
-    firstSeat: g.first,
     winner: w,
     how: clean(how, 40),
     players: g.players.map(p => ({
-      name: p.name, cmdrs: p.cmdrs.slice(), life: p.life, poison: p.poison,
-      out: p.out, outRound: p.outRound, outWhy: p.outWhy,
+      name: p.name, cmdrs: p.cmdrs.slice(), life: p.life, out: p.out, outWhy: p.outWhy,
     })),
   };
 }
@@ -160,9 +112,9 @@ export function stats(records) {
     row.games++; if (won) row.wins++;
     map.set(k, row);
   };
-  let rounds = 0, minutes = 0;
+  let minutes = 0;
   for (const r of records) {
-    rounds += r.rounds || 0; minutes += r.minutes || 0;
+    minutes += r.minutes || 0;
     r.players.forEach((p, i) => {
       add(byPlayer, p.name, r.winner === i);
       add(byCmdr, cmdrKey(p), r.winner === i);
@@ -173,7 +125,6 @@ export function stats(records) {
   const n = records.length;
   return {
     games: n,
-    avgRounds: n ? rounds / n : 0,
     avgMinutes: n ? minutes / n : 0,
     players: sort([...byPlayer.values()]),
     commanders: sort([...byCmdr.values()]),

@@ -2,7 +2,7 @@
   "id": "/tracker.html",
   "name": "Commander Game Tracker",
   "short_name": "Game Tracker",
-  "description": "Life, commander damage, poison, commander tax and turns for a Commander pod, plus a log of every game.",
+  "description": "Life totals and commander damage for a Commander pod, plus a log of every game.",
   "start_url": "/tracker.html",
   "scope": "/tracker",
   "display": "standalone",

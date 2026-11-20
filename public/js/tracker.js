@@ -1,8 +1,8 @@
-// Commander game tracker page: setup, the table, the per-player sheet, end of game and the game log.
+// Commander game tracker page: setup, the table (life + commander damage), end of game and the game log.
 // Rules live in tracker-core.js. Everything is saved in localStorage after each change.
 import {
-  newGame, sources, changeLife, changePoison, changeCmd, changeCasts, setConceded, nextTurn,
-  finishGame, stats, tax, maxCmd, aliveCount, parseBackup, mergeGames, clock, HOW_WON, POISON_LETHAL, CMD_LETHAL,
+  newGame, sources, changeLife, changeCmd, setConceded,
+  finishGame, stats, maxCmd, parseBackup, mergeGames, clock, HOW_WON, CMD_LETHAL,
 } from './tracker-core.js';
 
 const $ = s => document.querySelector(s);
@@ -53,11 +53,6 @@ function renderSetup() {
     </div>`);
   }
   $('#seats').innerHTML = rows.join('');
-  const first = $('#first');
-  const was = first.value || 'random';
-  first.innerHTML = '<option value="random">Random</option>' +
-    Array.from({ length: setup.count }, (_, i) => `<option value="${i}">${esc(setup.seats[i]?.name || `Player ${i + 1}`)}</option>`).join('');
-  first.value = Number(was) < setup.count || was === 'random' ? was : 'random';
   $('#faceTable').checked = setup.faceTable;
   $('#cmdTakesLife').checked = setup.cmdTakesLife;
 
@@ -69,7 +64,7 @@ function renderSetup() {
 
   const live = game && !game.done;
   $('#resume').hidden = !live;
-  if (live) $('#resumeInfo').textContent = ` · round ${game.round}, ${game.players.map(p => p.name).join(', ')}`;
+  if (live) $('#resumeInfo').textContent = ` · ${game.players.map(p => `${p.name} ${p.life}`).join(', ')}`;
 }
 
 $('#seats').addEventListener('click', e => {
@@ -82,11 +77,6 @@ $('#seats').addEventListener('click', e => {
   if (!cm2.hidden) cm2.focus();
 });
 $('#seats').addEventListener('input', e => {
-  if (e.target.classList.contains('nm')) {
-    const i = [...document.querySelectorAll('#seats .nm')].indexOf(e.target);
-    const opt = $('#first').options[i + 1];
-    if (opt) opt.textContent = e.target.value || `Player ${i + 1}`;
-  }
   if (e.target.classList.contains('cm')) suggest(e.target.value);
 });
 
@@ -111,17 +101,14 @@ $('#start').addEventListener('click', () => {
   setup.cmdTakesLife = $('#cmdTakesLife').checked;
   save(KEY.setup, setup);
   if (game && !game.done && !confirmInline('#start', 'Start a new game? The one in progress is dropped.')) return;
-  const f = $('#first').value;
   game = newGame({
     players: setup.seats.slice(0, setup.count).map(s => ({ name: s.name, cmdrs: s.partner ? s.cmdrs : s.cmdrs.slice(0, 1) })),
     startLife: setup.life,
-    first: f === 'random' ? 'random' : Number(f),
     faceTable: setup.faceTable, cmdTakesLife: setup.cmdTakesLife,
   });
   undo = [];
   persist();
   show('game');
-  toast(`${game.players[game.first].name} goes first`);
 });
 $('#resumeBtn').addEventListener('click', () => show('game'));
 
@@ -174,7 +161,7 @@ function buildBoard() {
     return `<section class="panel${flip ? ' flip' : ''}" data-pi="${pi}" style="--pc:${COLORS[pi]}">
       <div class="inner">
         <button type="button" class="who" data-act="sheet">
-          <span class="nm">${esc(p.name)}</span><span class="cmd">${esc(p.cmdrs.join(' + ') || 'Tap for counters')}</span>
+          <span class="nm">${esc(p.name)}</span><span class="cmd">${esc(p.cmdrs.join(' + '))}</span>
         </button>
         <div class="life">
           <button type="button" class="tap minus" data-act="minus" aria-label="${esc(p.name)} lose 1 life"><span>−</span></button>
@@ -182,7 +169,7 @@ function buildBoard() {
           <button type="button" class="tap plus" data-act="plus" aria-label="${esc(p.name)} gain 1 life"><span>+</span></button>
           <span class="delta" aria-hidden="true"></span>
         </div>
-        <button type="button" class="badges" data-act="sheet" aria-label="${esc(p.name)} counters"></button>
+        <button type="button" class="badges" data-act="sheet" aria-label="${esc(p.name)} commander damage"></button>
         <div class="outmark" hidden></div>
       </div>
     </section>`;
@@ -211,22 +198,17 @@ function paint() {
   game.players.forEach((p, pi) => {
     const el = document.querySelector(`.panel[data-pi="${pi}"]`);
     el.querySelector('.num').textContent = p.life;
-    el.classList.toggle('active', pi === game.active && aliveCount(game) > 1);
     el.classList.toggle('out', p.out);
     el.classList.toggle('low', !p.out && p.life <= 10);
     const b = [];
-    if (p.poison) b.push(`<span class="b${p.poison >= POISON_LETHAL - 3 ? ' hot' : ''}">☣ ${p.poison}</span>`);
     const mc = maxCmd(p);
-    if (mc) b.push(`<span class="b${mc >= CMD_LETHAL - 6 ? ' hot' : ''}">⚔ ${mc}</span>`);
-    const t = p.cmdrs.length > 1 ? `${tax(p, 0)}/${tax(p, 1)}` : tax(p, 0);
-    if (p.casts[0] || p.casts[1]) b.push(`<span class="b">Tax +${t}</span>`);
-    if (!b.length) b.push('<span class="b ghost">Counters</span>');
+    if (mc) b.push(`<span class="b${mc >= CMD_LETHAL - 6 ? ' hot' : ''}">⚔ ${mc} cmdr dmg</span>`);
+    else b.push('<span class="b ghost">⚔ Cmdr damage</span>');
     el.querySelector('.badges').innerHTML = b.join('');
     const om = el.querySelector('.outmark');
     om.hidden = !p.out;
     if (p.out) om.textContent = `Out · ${p.outWhy}`;
   });
-  $('#roundTxt').textContent = `Round ${game.round}`;
   $('#undoBtn').disabled = !undo.length;
   tick();
 }
@@ -270,10 +252,6 @@ $('#board').addEventListener('click', e => {
 });
 $('#board').addEventListener('contextmenu', e => e.preventDefault());
 
-$('#nextBtn').addEventListener('click', () => {
-  act(null, () => nextTurn(game));
-  toast(`${game.players[game.active].name}'s turn`);
-});
 $('#undoBtn').addEventListener('click', () => {
   if (!undo.length) return;
   game = JSON.parse(undo.pop());
@@ -320,11 +298,6 @@ function playerSheet(pi) {
       <h3>Commander damage taken</h3>
       ${srcs.map(s => stepper(esc(s.label), me.cmd[s.key] || 0, 'cmd:' + s.key,
         esc(game.players[s.pi].name) + ((me.cmd[s.key] || 0) >= CMD_LETHAL ? ' · lethal' : ''))).join('')}
-      <h3>Counters</h3>
-      ${stepper('Poison', me.poison, 'poison', me.poison >= POISON_LETHAL ? 'lethal' : `${POISON_LETHAL} is lethal`)}
-      <h3>Commander tax</h3>
-      ${(me.cmdrs.length ? me.cmdrs : ['Commander']).map((c, ci) =>
-        stepper(esc(c), me.casts[ci] || 0, 'cast:' + ci, `Cast ${me.casts[ci] || 0}× from the command zone · tax +${tax(me, ci)}`)).join('')}
       <button type="button" class="btn ${me.conceded ? '' : 'dark'} wide" data-concede>${me.conceded ? 'Bring back in' : 'Concede / knocked out'}</button>`;
   });
 }
@@ -339,8 +312,6 @@ $('#sheetBody').addEventListener('click', e => {
     const key = rest.join(':');
     act(`sheet${pi}${kind}${key}`, () => {
       if (kind === 'cmd') changeCmd(game, pi, key, d);
-      else if (kind === 'poison') changePoison(game, pi, d);
-      else if (kind === 'cast') changeCasts(game, pi, Number(key), d);
     });
     sheetRefresh?.();
     return;
@@ -355,15 +326,15 @@ $('#sheetBody').addEventListener('click', e => {
 
 function menuSheet() {
   openSheet('Game', false, () => {
-    const alive = aliveCount(game);
+    const alive = game.players.filter(p => !p.out).length;
     $('#sheetBody').innerHTML = `
-      <p class="muted">Round ${game.round} · ${clock(Date.now() - game.startedAt)} played · ${alive} of ${game.players.length} still in · ${wakeText()}</p>
+      <p class="muted">${clock(Date.now() - game.startedAt)} played · ${alive} of ${game.players.length} still in · ${wakeText()}</p>
       <button type="button" class="btn wide" id="endBtn">End game and pick the winner</button>
       <button type="button" class="btn dark wide" id="randBtn">Pick a random player</button>
       <button type="button" class="btn dark wide" id="logBtn">Game log</button>
       <button type="button" class="btn dark wide" id="setupBtn">Back to setup (keeps this game)</button>
       <button type="button" class="link danger" id="dropBtn">Abandon this game without saving</button>
-      ${game.events.length ? `<h3>This game</h3><ol class="events">${game.events.slice(-12).reverse().map(ev => `<li><span class="mono">R${ev.round}</span> ${esc(ev.text)}</li>`).join('')}</ol>` : ''}`;
+      ${game.events.length ? `<h3>This game</h3><ol class="events">${game.events.slice(-12).reverse().map(ev => `<li><span class="mono">${clock(ev.at - game.startedAt)}</span> ${esc(ev.text)}</li>`).join('')}</ol>` : ''}`;
     $('#endBtn').onclick = endSheet;
     $('#randBtn').onclick = () => {
       const alivePlayers = game.players.filter(p => !p.out);
@@ -385,11 +356,11 @@ function endSheet() {
   openSheet('Who won?', false, () => {
     $('#sheetBody').innerHTML = `
       <div class="pick" id="winPick">${game.players.map((p, i) => `<button type="button" class="opt${winner === i ? ' on' : ''}" data-w="${i}" style="--pc:${COLORS[i]}">
-        <strong>${esc(p.name)}</strong><small>${esc(p.cmdrs.join(' + '))}${p.out ? ' · out R' + p.outRound : ''}</small></button>`).join('')}
+        <strong>${esc(p.name)}</strong><small>${esc(p.cmdrs.join(' + '))}${p.out ? ' · out' : ''}</small></button>`).join('')}
         <button type="button" class="opt${winner === -1 ? ' on' : ''}" data-w="-1"><strong>Draw / no winner</strong></button></div>
       <h3>How</h3>
       <div class="chips" id="howPick">${HOW_WON.map(h => `<button type="button" class="chip${how === h ? ' on' : ''}" data-h="${esc(h)}">${esc(h)}</button>`).join('')}</div>
-      <p class="muted">Saves round ${game.round} as the win turn and ${clock(Date.now() - game.startedAt)} as the game length.</p>
+      <p class="muted">Saves ${clock(Date.now() - game.startedAt)} as the game length.</p>
       <button type="button" class="btn big wide" id="saveGame" ${winner === null ? 'disabled' : ''}>Save game</button>`;
     $('#winPick').onclick = e => { const b = e.target.closest('[data-w]'); if (b) { winner = Number(b.dataset.w); sheetRefresh(); } };
     $('#howPick').onclick = e => { const b = e.target.closest('[data-h]'); if (b) { how = how === b.dataset.h ? '' : b.dataset.h; sheetRefresh(); } };
@@ -413,7 +384,6 @@ function renderHistory() {
     ${rowsArr.slice(0, 15).map(r => `<tr><td>${esc(r.name)}</td><td>${r.games}</td><td>${r.wins}</td><td>${pct(r.rate)}</td></tr>`).join('')}</tbody></table></div>` : '';
   $('#statsBox').innerHTML = s.games ? `
     <div class="facts"><div><strong>${s.games}</strong><span>games</span></div>
-      <div><strong>${s.avgRounds.toFixed(1)}</strong><span>avg rounds</span></div>
       <div><strong>${Math.round(s.avgMinutes)}</strong><span>avg minutes</span></div></div>
     ${table('Players', s.players)}${table('Commanders', s.commanders)}`
     : '<p class="muted">No games saved yet. Finish a game from the table’s menu and it shows up here.</p>';
@@ -421,9 +391,9 @@ function renderHistory() {
     const d = new Date(r.date);
     const w = r.winner !== null ? r.players[r.winner] : null;
     return `<div class="card game-row">
-      <div class="gr-top"><strong>${w ? `${esc(w.name)} won` : 'Draw'}</strong><span class="muted mono">${d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} · R${r.rounds} · ${r.minutes} min</span></div>
+      <div class="gr-top"><strong>${w ? `${esc(w.name)} won` : 'Draw'}</strong><span class="muted mono">${d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} · ${r.minutes} min</span></div>
       ${w ? `<div class="muted">${esc(w.cmdrs.join(' + ') || '')}${r.how ? ` · ${esc(r.how)}` : ''}</div>` : ''}
-      <ul class="gp">${r.players.map((p, i) => `<li class="${i === r.winner ? 'won' : ''}">${esc(p.name)}${p.cmdrs.length ? ` <span class="muted">(${esc(p.cmdrs.join(' + '))})</span>` : ''}${p.outRound ? ` <span class="muted">out R${p.outRound}</span>` : ''}</li>`).join('')}</ul>
+      <ul class="gp">${r.players.map((p, i) => `<li class="${i === r.winner ? 'won' : ''}">${esc(p.name)}${p.cmdrs.length ? ` <span class="muted">(${esc(p.cmdrs.join(' + '))})</span>` : ''}${p.out && i !== r.winner ? ' <span class="muted">out</span>' : ''}</li>`).join('')}</ul>
       <button type="button" class="link danger" data-del="${esc(r.id)}">Delete</button>
     </div>`;
   }).join('');

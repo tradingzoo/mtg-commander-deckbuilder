@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <title>Game Tracker · Commander</title>
-  <meta name="description" content="Commander life tracker: life, commander damage, poison, commander tax, turns, and a log of every game.">
+  <meta name="description" content="Commander life tracker: life totals, commander damage, and a log of every game.">
   <meta name="theme-color" content="#0f1a16">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -47,13 +47,9 @@
       </fieldset>
 
       <fieldset class="seats">
-        <legend>Seats, in turn order</legend>
+        <legend>Players, round the table</legend>
         <div id="seats" class="stack small"></div>
       </fieldset>
-
-      <label class="field">Who goes first
-        <select id="first"></select>
-      </label>
 
       <label class="check"><input type="checkbox" id="faceTable" checked>
         <span><strong>Phone in the middle of the table</strong><span class="muted">Turns the top row round so each player reads their own life.</span></span></label>
@@ -74,8 +70,7 @@
       <button type="button" class="cbtn" id="undoBtn" aria-label="Undo">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <div class="turninfo"><span id="roundTxt">Round 1</span><span id="clockTxt" class="mono">0:00</span></div>
-      <button type="button" class="cbtn next" id="nextBtn">Next turn</button>
+      <div class="turninfo"><span id="clockTxt" class="mono">0:00</span></div>
       <button type="button" class="cbtn" id="menuBtn" aria-label="Menu">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
       </button>

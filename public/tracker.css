@@ -95,7 +95,8 @@ body.in-game { position: fixed; inset: 0; overflow: hidden; background: var(--ni
 .delta { position: absolute; top: 4%; left: 50%; transform: translate(-50%, 6px); font: 800 1.3rem/1 var(--f-body); background: rgba(15,26,22,.55); padding: .25rem .55rem; border-radius: 999px; opacity: 0; transition: opacity .15s, transform .15s; pointer-events: none; z-index: 2; }
 .delta.on { opacity: 1; transform: translate(-50%, 0); }
 .badges { z-index: 2; display: flex; flex-wrap: wrap; gap: .3rem; border: 0; background: transparent; color: inherit; padding: .2rem .7rem .65rem; min-height: 44px; align-items: flex-end; }
-.b { font: 700 .82rem/1 var(--f-body); background: rgba(255,255,255,.2); padding: .35rem .5rem; border-radius: 8px; white-space: nowrap; }
+.b { font: 700 .82rem/1 var(--f-body); background: rgba(255,255,255,.2); padding: .35rem .5rem; border-radius: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.badges { max-width: 100%; }
 .b.hot { background: #fff; color: var(--bad); }
 .b.ghost { background: rgba(255,255,255,.12); font-weight: 600; opacity: .9; }
 .outmark { position: absolute; left: 50%; top: 72%; transform: translate(-50%, -50%); font: 800 1rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase;
@@ -110,7 +111,7 @@ body.in-game { position: fixed; inset: 0; overflow: hidden; background: var(--ni
 .cbtn.next { background: var(--accent); color: var(--night); padding: 0 1.1rem; font-size: .98rem; }
 .turninfo { display: flex; flex-direction: column; align-items: center; line-height: 1.1; padding: 0 .3rem; min-width: 4.6rem; }
 .turninfo span:first-child { font-weight: 700; font-size: .95rem; white-space: nowrap; }
-.turninfo .mono { font-size: .78rem; opacity: .75; }
+.turninfo .mono { font-size: 1rem; font-weight: 600; opacity: .85; }
 
 /* ---------- Sheets ---------- */
 .sheet-bg { position: fixed; inset: 0; z-index: 20; background: rgba(15,26,22,.55); display: flex; align-items: flex-end; justify-content: center; }
@@ -150,7 +151,7 @@ body.in-game { position: fixed; inset: 0; overflow: hidden; background: var(--ni
 /* ---------- Game log ---------- */
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: .9rem 1rem; min-width: 0; }
 .card h3 { margin-top: 0; }
-.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+.facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; }
 .facts div { background: var(--brand); color: var(--on-brand); border-radius: var(--r); padding: .8rem; display: flex; flex-direction: column; }
 .facts strong { font: 400 1.9rem/1 var(--f-display); }
 .facts span { font-size: .82rem; opacity: .85; }
