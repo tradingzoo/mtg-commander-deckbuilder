@@ -64,6 +64,30 @@ try {
         if (ssp.length) fails.push(`${tag} ${pg} spills: ${ssp.join(', ')}`);
         if (w === 390 || w === 800) await p.screenshot({ path: `${out}${pg}-${tag}.png`, fullPage: true });
       }
+      // Game tracker: setup, the table (no scrolling allowed), a player's sheet and the game log.
+      await p.goto(`http://localhost:${PORT}/tracker.html`);
+      await p.evaluate(() => localStorage.clear());
+      await p.reload();
+      if ((await spill(p, w)).length) fails.push(`${tag} tracker setup spills: ${(await spill(p, w)).join(', ')}`);
+      await p.locator('#seats .nm').first().fill('A very long player name here');
+      await p.locator('#seats .cm').first().fill('Dáin of the Ancient Halls');
+      await p.click('#start');
+      await p.waitForSelector('.panel');
+      const tsp = await spill(p, w);
+      if (tsp.length) fails.push(`${tag} tracker table spills: ${tsp.join(', ')}`);
+      const over = await p.evaluate(() => document.documentElement.scrollHeight > innerHeight + 1);
+      if (over) fails.push(`${tag} tracker table scrolls`);
+      if (w === 390 || w === 800) await p.screenshot({ path: `${out}tracker-${tag}.png` });
+      await p.locator('.panel .badges').first().click();
+      await p.waitForSelector('#sheet:not([hidden]) .step');
+      const shp = await spill(p, w);
+      if (shp.length) fails.push(`${tag} tracker sheet spills: ${shp.join(', ')}`);
+      await p.click('#sheetClose');
+      await p.click('#menuBtn'); await p.click('#endBtn');
+      await p.locator('[data-w="0"]').click(); await p.click('#saveGame');
+      await p.waitForSelector('#historyView:not([hidden]) .game-row');
+      const hsp = await spill(p, w);
+      if (hsp.length) fails.push(`${tag} tracker log spills: ${hsp.join(', ')}`);
     } catch (e) {
       fails.push(`${tag}: ${e.message.split('\n')[0]}`);
     }

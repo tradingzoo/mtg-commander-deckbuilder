@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Game Tracker · Commander</title>
+  <meta name="description" content="Commander life tracker: life totals, commander damage, and a log of every game.">
+  <meta name="theme-color" content="#0f1a16">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Game Tracker">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <link rel="manifest" href="/tracker.webmanifest">
+  <link rel="icon" href="/icons/tracker-192.png">
+  <link rel="apple-touch-icon" href="/icons/tracker-180.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap">
+  <link rel="stylesheet" href="/tracker.css">
+</head>
+<body>
+  <!-- Setup: who is playing -->
+  <main id="setupView" class="page">
+    <header class="bar">
+      <span class="brand">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 28s-11-6.6-11-14.2A6 6 0 0 1 16 10a6 6 0 0 1 11 3.8C27 21.4 16 28 16 28z" fill="#c08a2a"/></svg>
+        Game Tracker
+      </span>
+      <button type="button" class="pill" data-go="history">Game log</button>
+    </header>
+
+    <div class="wrap stack">
+      <div id="resume" class="resume" hidden>
+        <div><strong>Game in progress</strong><span id="resumeInfo" class="muted"></span></div>
+        <button type="button" class="btn" id="resumeBtn">Resume</button>
+      </div>
+
+      <h1>New game</h1>
+
+      <fieldset class="seg-wrap">
+        <legend>Players</legend>
+        <div class="seg" id="countSeg" role="radiogroup" aria-label="Players"></div>
+      </fieldset>
+      <fieldset class="seg-wrap">
+        <legend>Starting life</legend>
+        <div class="seg" id="lifeSeg" role="radiogroup" aria-label="Starting life"></div>
+      </fieldset>
+
+      <fieldset class="seats">
+        <legend>Players, round the table</legend>
+        <div id="seats" class="stack small"></div>
+      </fieldset>
+
+      <label class="check"><input type="checkbox" id="faceTable" checked>
+        <span><strong>Phone in the middle of the table</strong><span class="muted">Turns the top row round so each player reads their own life.</span></span></label>
+      <label class="check"><input type="checkbox" id="cmdTakesLife" checked>
+        <span><strong>Commander damage also takes life</strong><span class="muted">Adding commander damage lowers that player's life too.</span></span></label>
+
+      <button type="button" class="btn big" id="start">Start game</button>
+      <p class="note">Everything saves on this phone, so it works with no signal. Back up from the game log now and then.</p>
+    </div>
+    <datalist id="pastNames"></datalist>
+    <datalist id="pastCmdrs"></datalist>
+  </main>
+
+  <!-- The table -->
+  <main id="gameView" class="game" hidden>
+    <div id="board" class="board"></div>
+    <div class="center" id="center">
+      <button type="button" class="cbtn" id="undoBtn" aria-label="Undo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="turninfo"><span id="clockTxt" class="mono">0:00</span></div>
+      <button type="button" class="cbtn" id="menuBtn" aria-label="Menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </main>
+
+  <!-- Game log and stats -->
+  <main id="historyView" class="page" hidden>
+    <header class="bar">
+      <button type="button" class="pill ghost" data-go="back">‹ Back</button>
+      <span class="brand">Game log</span>
+      <span></span>
+    </header>
+    <div class="wrap stack">
+      <div id="statsBox" class="stack"></div>
+      <h2>Games</h2>
+      <div id="gameList" class="stack small"></div>
+      <div class="backup">
+        <button type="button" class="btn dark small" id="exportBtn">Back up games</button>
+        <label class="btn dark small file">Restore backup<input type="file" id="importFile" accept="application/json,.json"></label>
+      </div>
+      <p class="status" id="backupStatus" role="status"></p>
+    </div>
+  </main>
+
+  <!-- Sheets (player details, menu, end of game) -->
+  <div id="sheet" class="sheet-bg" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+      <div class="sheet-head"><h2 id="sheetTitle"></h2><button type="button" class="x" id="sheetClose" aria-label="Close">✕</button></div>
+      <div id="sheetBody" class="sheet-body"></div>
+    </div>
+  </div>
+
+  <script type="module" src="/js/tracker.js"></script>
+</body>
+</html>
